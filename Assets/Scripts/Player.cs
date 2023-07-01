@@ -25,7 +25,7 @@ public class Player : Being {
 
         // Move dependent on user input
         // TODO for now, test press/release jump
-        UpdatePreJump(jumpKeys.Any(k => Input.GetKeyDown(k)));
+        UpdatePreJump(jumpKeys.Any(k => Input.GetKey(k)));
         UpdateJump(jumpKeys.Any(k => Input.GetKeyUp(k)));
         UpdateCrouch(crouchKeys.Any(k => Input.GetKeyDown(k)));
         UpdateWalk(input, runningKeys.Any(k => Input.GetKey(k)));

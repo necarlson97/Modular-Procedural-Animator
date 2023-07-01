@@ -75,9 +75,10 @@ public abstract class Being : MonoBehaviour {
         GetComponent<Rigidbody>().AddForce(transform.up * jumpForce);
         jumpTimer = 1f; // Time before a grounded player can jump again
     }
-    protected void UpdatePreJump(bool jumped) {
+    bool _prejump;
+    protected void UpdatePreJump(bool prejump) {
         // Before jump, do a bit of crouching down
-        if (!crouched) collider.localScale = new Vector3(1, .85f, 1);
+        _prejump = prejump;
     }
 
     bool crouched; // Crouching is toggled
@@ -89,6 +90,7 @@ public abstract class Being : MonoBehaviour {
         
         var collider = transform.Find("Walk Collider");
         if (crouched) collider.localScale = new Vector3(1, .65f, 1);
+        else if (_prejump) collider.localScale = new Vector3(1, .85f, 1);
         else collider.localScale= new Vector3(1, 1, 1);
     }
 

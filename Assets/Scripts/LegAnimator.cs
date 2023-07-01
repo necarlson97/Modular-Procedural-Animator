@@ -211,7 +211,7 @@ public class LegAnimator : LimbAnimator {
         // 'in-line' with our normal resting point
         if (!being.IsWalking()) {
             footDirection = transform.position + startingPos - root;
-            footDirection *= 2;
+            footDirection *= 1.5f;
         }
 
         Ray ray = new Ray(root, footDirection);
