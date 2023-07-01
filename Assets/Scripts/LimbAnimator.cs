@@ -7,34 +7,54 @@ public class LimbAnimator : MonoBehaviour {
     // Holds code for setting up IK for arm / leg / torso / etc
     // - intended to be extended (TODO abstract?)
     // Requires:
-    // a child gameobject called 'target'
-    // a child skeleton called 'skeleton'
+    // a child gameobject with the word 'Target'
+    // a child skeleton with the word 'Skeleton'
+    // Ideally:
+    // skeleton is mostly a single long chain (see GetRootBone, etc)
+    // this limb is the child of a 'being'
+    // leg/arms have 'parners' that are named:
+    // 'Leg L' and 'Leg R'
 
-    protected GameObject target;
-    protected GameObject skeleton;
+    // The character/monster/etc that this limb belongs to
+    protected Being being;
 
+    // Typically, set programatically - but can be overridden
     public GameObject rootBone;
     public GameObject midBone;
     public GameObject tipBone;
 
+    // Set programatically
+    protected GameObject target;
+    protected GameObject skeleton;
+
     // Just some helper variables
     protected Vector3 _targetStartPos;
     protected Quaternion _targetStartRot;
+    protected Vector3 _rootStartPos;
+    protected Quaternion _rootStartRot;
     
     void Start() {
+        being = transform.parent.GetComponent<Being>();
         SetupRig();
+
+        // The 'start' logic for the children
+        OnStart();
     }
+    protected virtual void OnStart(){}
+
 
     void SetupRig() {
         // Create the objects / components needed for IK
         // (because Unity's IK setup is somewhat awkward,
         // and we want to do it, reapeatidly, 100s of times,
         // better just to do it programatically. Thanks chat-gpt)
-        target = transform.Find("target").gameObject;
-        skeleton = transform.Find("skeleton").gameObject;
+        target = FindContains("Target");
+        skeleton = FindContains("Skeleton");
 
         _targetStartPos = target.transform.localPosition;
         _targetStartRot = target.transform.localRotation;
+        _rootStartPos = GetRootBone().transform.localPosition;
+        _rootStartRot = GetRootBone().transform.localRotation;
 
          // Setup animator
         var animator = gameObject.GetComponent<Animator>();
@@ -62,16 +82,23 @@ public class LimbAnimator : MonoBehaviour {
         if (ik == null) {
             ik = skeleton.AddComponent<TwoBoneIKConstraint>();
         }
+        // For now, just create a hint empty right infront of the limb,
+        // - then we can worry about changing it in a subscript
+        var hint = new GameObject("Hint");
+        hint.transform.SetParent(transform);
+        var hintOffset = transform.forward * 0.2f * GetLength();
+        hint.transform.position = GetMidBone().transform.position + hintOffset;
 
         // Setting IK information
         ik.data.target = target.transform;
+        ik.data.hint = hint.transform;
         ik.data.root = GetRootBone().transform;
         ik.data.mid = GetMidBone().transform;
         ik.data.tip = GetTipBone().transform;
-
         ik.data.targetPositionWeight = 1;
         ik.data.targetRotationWeight = 1;
-        
+        ik.data.hintWeight = 1;
+
         // Workaround - see 'EnableRig'
         GetComponent<RigBuilder>().enabled = false;
         Invoke("EnableRig", 0);
@@ -86,16 +113,19 @@ public class LimbAnimator : MonoBehaviour {
         GetComponent<RigBuilder>().enabled = true;
     }
 
-    GameObject GetRootBone() {
+    public GameObject GetRootBone() {
         // If the bone is not explicitly set,
         // we will assume the root bone for ik
         // is the 1st bone under skeleton
         if (rootBone != null) return rootBone;
-        rootBone = skeleton.transform.GetChild(0).gameObject;
+        // TODO for now, assume 'last'
+        // - mostly because 'thigh' later alpha than 'pelvis'
+        var last = skeleton.transform.childCount - 1;
+        rootBone = skeleton.transform.GetChild(last).gameObject;
         return rootBone;
     }
 
-    GameObject GetMidBone() {
+    public GameObject GetMidBone() {
         // If the bone is not explicitly set,
         // we will assume it is just after root
         if (midBone != null) return midBone;
@@ -103,26 +133,57 @@ public class LimbAnimator : MonoBehaviour {
         return midBone;
     }
 
-    GameObject GetTipBone() {
+    public GameObject GetTipBone() {
         // If the bone is not explicitly set,
         // we will assume the skeleton is a linear
-        // chain, and the tip is simply the last bone
+        // chain, and the tip is simply after the mid
         if (tipBone != null) return tipBone;
-        Transform currentBone = GetRootBone().transform.GetChild(0);
-        while (currentBone.childCount > 0) {
-            currentBone = currentBone.GetChild(0);
-        }
-        tipBone = currentBone.gameObject;
+        tipBone = GetLastBone();
         return tipBone;
     }
 
-    float GetLength() {
+    public GameObject GetLastBone() {
+        // Get the last child in the root's descendents
+        Transform currentBone = GetRootBone().transform;
+        while (currentBone.childCount > 0) {
+            var last = currentBone.childCount - 1;
+            currentBone = currentBone.GetChild(last);
+        }
+        return currentBone.gameObject;
+    }
+
+    float _length = -1;
+    public float GetLength() {
         // Returns the 'length' of the limb,
         // ideally this would be calculated by adding
         // up bones or something, but for now, we assume
         // it started in T-pose or simmilar (thus stretched out)
         // so starting pos call tell us length
-        return Vector3.Distance(GetRootBone().transform.localPosition, _targetStartPos);
+        if (_length != -1) return _length;
+        var rootPos = GetRootBone().transform.position - transform.position;
+        _length = Vector3.Distance(rootPos, _targetStartPos);
+        return _length;
+    }
+
+    public Vector3 TargetOffset() {
+        return _targetStartPos - target.transform.localPosition;
+    }
+
+    public GameObject FindContains(string query) {
+        // Find a child gameobject if it contains a string
+        // (recursive)
+        // TODO could be utility
+        return FindContains(query, transform);
+    }
+    public GameObject FindContains(string query, Transform t) {
+        if (t.name.Contains(query)){
+            return t.gameObject;
+        }
+        foreach (Transform child in t){
+            var found = FindContains(query, child);
+            if (found != null) return found;
+        }
+        return null;
     }
 
 }

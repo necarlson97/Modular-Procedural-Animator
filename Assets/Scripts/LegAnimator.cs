@@ -4,66 +4,77 @@ using UnityEngine;
 using UnityEditor;
 
 
-public class LegAnimator : MonoBehaviour {
-    Being being;
+public class LegAnimator : LimbAnimator {
+    
+    
+    // Limb 'length' is known - these values
+    // are a ratio of the limb's total length
+    // TODO how do these look?
+    protected float stepLengthRatio = .4f;
+    protected float stepHeightRatio = .3f;
 
-    // How fast to move the body, how 'fidgety'
-    // (inversly, how slow/deliberate/imposing)
-    // TODO set min/max, and have 0-1 slider
-    float frantic = 0.4f;
-
-
-    // TODO doc just testing
-    // TODO could do transforms
-    Vector3 startingFootR;
-    GameObject footTargetR;
-    Vector3 startingFootL;
-    GameObject footTargetL;
-
-    // TODO ideally set programatically
-    float maxStepLength = .4f;
-    float maxStepHeight = .3f;
-
-    public void Start() {
-        being = FindObjectOfType<Player>();
-        footTargetR = transform.Find("Rig/Right Leg IK/target").gameObject;
-        startingFootR = footTargetR.transform.localPosition;
-        footTargetL = transform.Find("Rig/Left Leg IK/target").gameObject;
-        startingFootL = footTargetL.transform.localPosition;
+    protected override void OnStart() {
+        // For now, we are just going to assume we want the foot,
+        // not the toe tip - so just gram programatically
+        // tipBone = GetMidBone().transform.GetChild(0).gameObject;
     }
 
-    Vector3 lastPlacementL;
-    Vector3 lastPlacementR;
     public void Update() {
-        PlaceFeet();
+        PlaceFoot();
         PlaceHips();
     }
 
-    public void PlaceFeet(){
-        // Find foot placements, and lerp to them
-        var footPlacementR = GetFootPlacement(lastPlacementR, startingFootR);
-        var footPlacementL = GetFootPlacement(lastPlacementL, startingFootL, true);
-
-        var ftr = footTargetR.transform; // Shorthand
-        var ftl = footTargetL.transform;
-        ftr.position = Vector3.Lerp(ftr.position, footPlacementR, 30 * Time.deltaTime);
-        ftl.position = Vector3.Lerp(ftl.position, footPlacementL, 30 * Time.deltaTime);
-
-        lastPlacementR = footPlacementR;
-        lastPlacementL = footPlacementL;
+    LegAnimator _partner;
+    public LegAnimator GetPartner() {
+        // Programatically set leg that this
+        // is 'partnered' with (attatched to the same hip)
+        // (can be None)
+        // TODO make 'limb' method that takes Leg/Arm name
+        // TODO 'memoize' is recalculated for unpaired legs
+        if (_partner != null) return _partner;
+        for (int i = 0; i < transform.parent.childCount; i++) {
+            Transform sibling = transform.parent.GetChild(i);
+            if (sibling != transform && sibling.name.Contains("Leg")) {
+                _partner = sibling.GetComponent<LegAnimator>();
+                return _partner;
+            }
+        }
+        return null;
+    }
+    bool IsOffset() {
+        // return true if this is the 'offset'
+        // foot - e.g., the left foot in a pair,
+        // so a pair stays 'out of phase'
+        // TODO using name is a bit crude here
+        return GetPartner() != null && name.Contains(" L");
     }
 
-    Vector3 startingHipPos;
+    Vector3 lastPlacement;
+    public void PlaceFoot(){
+        // Find foot placements, and lerp to them
+
+        var footPlacement = GetFootPlacement(
+            lastPlacement, _targetStartPos, IsOffset());
+
+        target.transform.position = Vector3.Lerp(
+            target.transform.position, footPlacement, 30 * Time.deltaTime);
+
+        lastPlacement = footPlacement;
+    }
+
     public void PlaceHips() {
         // Bounce hips along with lifting either foot
+        // TODO actually, torso should handle this, yes?
+        var footHeight = TargetOffset().z;
+        var partnerHeight = 0f;
+        if (GetPartner() != null) {
+            partnerHeight = GetPartner().TargetOffset().z;
+        }
 
-        // TODO would cause problem with starting at 0,0,0?
-        if (startingHipPos == default(Vector3)) startingHipPos = transform.localPosition;
-
-        var ry = footTargetR.transform.localPosition.y;
-        var ly = footTargetL.transform.localPosition.y;
-        var bounceY = Mathf.Max(ry, ly) / 10;
-        transform.localPosition = new Vector3(0, bounceY, 0);
+        var bounceHeight = Mathf.Max(footHeight, partnerHeight) * (MaxStepHeight() * 1f);
+        var bounceOffset = transform.forward * bounceHeight;
+        // TOOD not sure if I like setting our pos vs setting root bone...
+        GetRootBone().transform.localPosition = _rootStartPos + bounceOffset;
     }
 
     float degrees;
@@ -78,10 +89,10 @@ public class LegAnimator : MonoBehaviour {
         var d = 360 / gaitLength * Time.deltaTime;
         degrees = (degrees - d) % 360;
         // Offset one of the feet by 180 degrees
-        var thisFootDegrees = offsetFoot ? degrees + 180 : degrees;
+        var footDegrees = offsetFoot ? degrees + 180 : degrees;
 
-        var z = (StepLength() * Mathf.Cos(thisFootDegrees * Mathf.Deg2Rad));
-        var y = (StepHeight() * Mathf.Sin(thisFootDegrees * Mathf.Deg2Rad));
+        var z = StepLength(footDegrees);
+        var y = StepHeight(footDegrees);
 
         var ellipsePoint = new Vector3(0, y, z);
 
@@ -95,6 +106,10 @@ public class LegAnimator : MonoBehaviour {
         // * in the air, along an ellipse path
         // * stationary where it hit the ground
 
+        // (if first frame)
+        if (lastPlacement == Vector3.zero) {
+            lastPlacement = target.transform.position;
+        }
         // TODO currently 'lastPlacement' will always be one frame 'above'
         // the ground - ideally, it wouldn't
 
@@ -115,7 +130,7 @@ public class LegAnimator : MonoBehaviour {
         
         // TODO might have to have programatic offsets or something
         // For now, target bone is actually in foot, rather than on bottom of it
-        if (belowGround) groundHit.point += new Vector3(0, maxStepHeight/10, 0);
+        // if (belowGround) groundHit.point += new Vector3(0, MaxStepHeight() * .01f, 0);
 
         Debug.DrawLine(ellipseCenter, ellipsePos, Color.blue);
 
@@ -137,7 +152,7 @@ public class LegAnimator : MonoBehaviour {
         // If we are about to hit ground, extend twoards it
         if (groundHit.transform != null) return groundHit.point;
         // Otherwise, move feet slowly twoards a resting state
-        var airCrouch = transform.position + startingPos + transform.up * maxStepHeight/2;
+        var airCrouch = transform.position + startingPos + transform.up * MaxStepHeight()/2;
         lastPlacement = Vector3.Lerp(lastPlacement, airCrouch, 20 * Time.deltaTime);
         // TODO could use velocity here to inform something
         return lastPlacement;
@@ -145,11 +160,27 @@ public class LegAnimator : MonoBehaviour {
 
     // Step size is a function of how fast we are running
     float StepLength() {
-        // Longer steps when moving forward, shorter when sidestepping
-        var forward = Mathf.Max(.2f, Mathf.Abs(being.ForwardRush()));
-        return maxStepLength * being.Rush() * forward;
+        // Get the general stride length for this walk/run speed
+        // (Longer steps when moving forward, shorter when sidestepping)
+        var forward = Mathf.Min(.2f, Mathf.Abs(being.ForwardRush()));
+        return MaxStepLength() * being.Rush() * forward;
     }
-    float StepHeight() { return maxStepHeight * being.Rush(); }
+    float StepHeight() {
+        // Get the general step height for this walk/run speed
+        return MaxStepHeight() * being.Rush();
+    }
+    float StepLength(float footDegrees) {
+        // Get exact stride displacement for this foot,
+        // given 'angle' in walk cicle elipse
+        return StepLength() * Mathf.Cos(footDegrees * Mathf.Deg2Rad);
+    }
+    float StepHeight(float footDegrees) {
+        // Get exact step height for this foot,
+        // given 'angle' in walk cicle elipse
+        return StepHeight() * Mathf.Sin(footDegrees * Mathf.Deg2Rad);
+    }
+    float MaxStepLength() { return GetLength() * stepLengthRatio; }
+    float MaxStepHeight() { return GetLength() * stepHeightRatio; }
 
     float EllipsePerimiter() {
         // The walk elipse perimiter allows us to determine
@@ -173,26 +204,23 @@ public class LegAnimator : MonoBehaviour {
 
         // Cast from center of character
         // TOOD layermask
-        var hips = HipPosition();
-        var footDirection = landingPos-hips;
+        var root = GetRootBone().transform.position;
+        var footDirection = landingPos-root;
 
         // If we are at rest, we actually want to check below the foot,
         // 'in-line' with our normal resting point
         if (!being.IsWalking()) {
-            footDirection = transform.position + startingPos - hips;
+            footDirection = transform.position + startingPos - root;
             footDirection *= 2;
         }
 
-        Ray ray = new Ray(hips, footDirection);
+        Ray ray = new Ray(root, footDirection);
         RaycastHit hit;
         Physics.Raycast(ray, out hit, footDirection.magnitude);
         return hit;
     }
-    Vector3 HipPosition() {
-        // TODO hips for non-anthro characters 
-        return transform.Find("Armature").position;
-    }
 
+    // TODO debug key
     // void OnDrawGizmos()  {
     //     Handles.Label(transform.position, "Degrees: "+degrees);
     // }

@@ -24,7 +24,9 @@ public class Player : Being {
         UpdateLook(target != null ? target.transform.position : camLook);
 
         // Move dependent on user input
-        UpdateJump(jumpKeys.Any(k => Input.GetKeyDown(k)));
+        // TODO for now, test press/release jump
+        UpdatePreJump(jumpKeys.Any(k => Input.GetKeyDown(k)));
+        UpdateJump(jumpKeys.Any(k => Input.GetKeyUp(k)));
         UpdateCrouch(crouchKeys.Any(k => Input.GetKeyDown(k)));
         UpdateWalk(input, runningKeys.Any(k => Input.GetKey(k)));
         UpdateAttack(lightAttackKeys.Any(k => Input.GetKeyDown(k)));

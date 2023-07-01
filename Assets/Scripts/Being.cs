@@ -58,14 +58,9 @@ public abstract class Being : MonoBehaviour {
         // when backpeadling
     }
 
-    private Animator weaponAnim;
     protected void UpdateAttack(bool attacked) {
         // TODO 'hitbox', attack sequences, etc, etc
         if (!attacked) return;
-        if (weaponAnim == null) {
-            weaponAnim = transform.Find("weapon").GetComponentInChildren<Animator>();
-        }
-        weaponAnim.SetTrigger("slash");
         Debug.Log("slash");
     }
 
@@ -80,11 +75,17 @@ public abstract class Being : MonoBehaviour {
         GetComponent<Rigidbody>().AddForce(transform.up * jumpForce);
         jumpTimer = 1f; // Time before a grounded player can jump again
     }
+    protected void UpdatePreJump(bool jumped) {
+        // Before jump, do a bit of crouching down
+        if (!crouched) collider.localScale = new Vector3(1, .85f, 1);
+    }
 
     bool crouched; // Crouching is toggled
     protected void UpdateCrouch(bool toggleCrouch) {
         // Check to see if being is crouched
         if (toggleCrouch) crouched = !crouched;
+
+        Debug.Log("Crouching: "+crouched);
         
         var collider = transform.Find("Walk Collider");
         if (crouched) collider.localScale = new Vector3(1, .65f, 1);

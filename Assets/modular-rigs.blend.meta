@@ -6,6 +6,9 @@ ModelImporter:
   - first:
       74: -623603649343465320
     second: Scene
+  - first:
+      74: -4977577306329208148
+    second: Character Workshop
   externalObjects: {}
   materials:
     materialImportMode: 2

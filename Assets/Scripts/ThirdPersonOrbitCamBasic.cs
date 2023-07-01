@@ -44,13 +44,13 @@ public class ThirdPersonOrbitCamBasic : MonoBehaviour
 
 		// Set camera default position.
 		cam.position = player.position + Quaternion.identity * pivotOffset + Quaternion.identity * camOffset;
-		cam.rotation = Quaternion.identity;
 
 		// Set up references and default values.
 		smoothPivotOffset = pivotOffset;
 		smoothCamOffset = camOffset;
 		defaultFOV = cam.GetComponent<Camera>().fieldOfView;
 		angleH = player.eulerAngles.y;
+		angleV = -cam.eulerAngles.x;
 
 		ResetTargetOffsets ();
 		ResetFOV ();
