@@ -85,8 +85,6 @@ public abstract class Being : MonoBehaviour {
     protected void UpdateCrouch(bool toggleCrouch) {
         // Check to see if being is crouched
         if (toggleCrouch) crouched = !crouched;
-
-        Debug.Log("Crouching: "+crouched);
         
         var collider = transform.Find("Walk Collider");
         if (crouched) collider.localScale = new Vector3(1, .65f, 1);

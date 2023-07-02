@@ -849,7 +849,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 8995963206443797671}
-  - component: {fileID: 3902376303221306244}
+  - component: {fileID: 681525316607659446}
   m_Layer: 0
   m_Name: Torso
   m_TagString: Untagged
@@ -874,7 +874,7 @@ Transform:
   m_Father: {fileID: 7025642903224571496}
   m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &3902376303221306244
+--- !u!114 &681525316607659446
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -883,12 +883,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 3388859292987058339}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 98955c77513484e4cbfb6d4f5ee185e0, type: 3}
+  m_Script: {fileID: 11500000, guid: 89e6b040371f3b047b559596cd725576, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  rootBone: {fileID: 0}
-  midBone: {fileID: 0}
-  tipBone: {fileID: 0}
 --- !u!1 &3467135956741804283
 GameObject:
   m_ObjectHideFlags: 0
@@ -2272,7 +2269,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1784727489331746555}
-  - component: {fileID: 1173215996463344203}
+  - component: {fileID: 6312558315610470563}
   m_Layer: 0
   m_Name: Arm R
   m_TagString: Untagged
@@ -2297,7 +2294,7 @@ Transform:
   m_Father: {fileID: 7025642903224571496}
   m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1173215996463344203
+--- !u!114 &6312558315610470563
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -2306,12 +2303,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 8745970626790712266}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 98955c77513484e4cbfb6d4f5ee185e0, type: 3}
+  m_Script: {fileID: 11500000, guid: b611985b343a28341a0249f256e04f10, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  rootBone: {fileID: 0}
-  midBone: {fileID: 0}
-  tipBone: {fileID: 0}
 --- !u!1 &8837399678681978129
 GameObject:
   m_ObjectHideFlags: 0
@@ -2352,7 +2346,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 963573926784168276}
-  - component: {fileID: 6861200732305787565}
+  - component: {fileID: 9176781353535106816}
   m_Layer: 0
   m_Name: Arm L
   m_TagString: Untagged
@@ -2377,7 +2371,7 @@ Transform:
   m_Father: {fileID: 7025642903224571496}
   m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &6861200732305787565
+--- !u!114 &9176781353535106816
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -2386,9 +2380,6 @@ MonoBehaviour:
   m_GameObject: {fileID: 9000156650151520756}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 98955c77513484e4cbfb6d4f5ee185e0, type: 3}
+  m_Script: {fileID: 11500000, guid: b611985b343a28341a0249f256e04f10, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  rootBone: {fileID: 0}
-  midBone: {fileID: 0}
-  tipBone: {fileID: 0}

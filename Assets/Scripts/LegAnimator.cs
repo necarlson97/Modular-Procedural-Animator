@@ -13,7 +13,7 @@ public class LegAnimator : LimbAnimator {
     protected float stepLengthRatio = .4f;
     protected float stepHeightRatio = .3f;
 
-    protected override void OnStart() {
+    protected override void AfterStart() {
         // For now, we are just going to assume we want the foot,
         // not the toe tip - so just gram programatically
         // tipBone = GetMidBone().transform.GetChild(0).gameObject;

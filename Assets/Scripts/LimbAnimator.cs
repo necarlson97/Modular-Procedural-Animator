@@ -32,15 +32,24 @@ public class LimbAnimator : MonoBehaviour {
     protected Quaternion _targetStartRot;
     protected Vector3 _rootStartPos;
     protected Quaternion _rootStartRot;
+
+    // Wheter to setup twoBone or chain
+    public bool twoBone = true;
     
     void Start() {
         being = transform.parent.GetComponent<Being>();
-        SetupRig();
+        target = FindContains("Target");
+        skeleton = FindContains("Skeleton");
 
-        // The 'start' logic for the children
-        OnStart();
+        // Provide before/after logic hooks for the children
+        BeforeStart();
+        SetupRig();
+        if (twoBone) SetupTwoBone();
+        else SetupChain();
+        AfterStart();
     }
-    protected virtual void OnStart(){}
+    protected virtual void BeforeStart(){}
+    protected virtual void AfterStart(){}
 
 
     void SetupRig() {
@@ -48,8 +57,6 @@ public class LimbAnimator : MonoBehaviour {
         // (because Unity's IK setup is somewhat awkward,
         // and we want to do it, reapeatidly, 100s of times,
         // better just to do it programatically. Thanks chat-gpt)
-        target = FindContains("Target");
-        skeleton = FindContains("Skeleton");
 
         _targetStartPos = target.transform.localPosition;
         _targetStartRot = target.transform.localRotation;
@@ -76,9 +83,37 @@ public class LimbAnimator : MonoBehaviour {
             var rigLayer = new RigLayer(rig, true);
             rigBuilder.layers.Add(rigLayer);
         }
+    }
 
-        // Setup IK
-        var ik = skeleton.GetComponent<TwoBoneIKConstraint>();
+    protected void SetupChain() {
+        // Setup IK chain between root and tip,
+        // (ignoring midbone and hint)
+        var ik = skeleton.GetComponent<ChainIKConstraint>();
+        if (ik == null)  {
+            ik = skeleton.AddComponent<ChainIKConstraint>();
+        }
+        
+        ik.data.root = GetRootBone().transform;
+        ik.data.tip = GetTipBone().transform;
+        ik.data.target = target.transform;
+        ik.data.chainRotationWeight = 1f;
+        ik.data.tipRotationWeight = 1f;
+        ik.data.maintainTargetPositionOffset = true;
+        ik.data.maintainTargetRotationOffset = true;
+        ik.data.maxIterations = 10;
+        ik.data.tolerance = 0.001f;
+
+        // Workaround - see 'EnableRig'
+        GetComponent<RigBuilder>().enabled = false;
+        Invoke("EnableRig", 0);
+    }
+
+    protected void SetupTwoBone() {
+        // Set up a two bone constraint, using midbone,
+        // where everything before/after is basically rigid
+        // (which may be more useful for some limbs
+        // - and more perfomant)
+         var ik = skeleton.GetComponent<TwoBoneIKConstraint>();
         if (ik == null) {
             ik = skeleton.AddComponent<TwoBoneIKConstraint>();
         }
