@@ -8,16 +8,12 @@ public class TorsoAnimator : LimbAnimator {
     // they will lean forward when running
     float maxLeanRatio = 0.3f;
 
-    protected override void AfterStart() {
-        // Set with before we have deformity / rotation (?)
-        GetWidth();
-    }
-
     void Update() {
-
         // TODO I think we want to lean with chest,
         // but keep head focused on lock-on
         LeanTorso();
+        // TODO idle breathing?
+        // TODO look at focus?
     }
 
     void LeanTorso() {
@@ -39,17 +35,6 @@ public class TorsoAnimator : LimbAnimator {
 
     float MaxLean() {
         return GetLength() * maxLeanRatio;
-    }
-
-    float _width;
-    public float GetWidth() {
-        // TODO is this implementation bad?
-        // Is it good? Should we be using mesh bound elsewhere?
-        // How likely is it to be wrong because of width variability
-        // along torso length?
-        var mesh = GetComponentInChildren<SkinnedMeshRenderer>();
-        _width = mesh.bounds.size.x;
-        return _width;
     }
 
     public GameObject GetChestBone() {

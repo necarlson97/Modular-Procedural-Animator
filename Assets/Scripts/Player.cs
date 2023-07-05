@@ -5,12 +5,22 @@ using UnityEditor;
 using System.Linq;
 
 public class Player : Being {
-    internal static List<KeyCode> runningKeys = new List<KeyCode>{KeyCode.LeftShift, KeyCode.JoystickButton0};
-    internal static List<KeyCode> jumpKeys = new List<KeyCode>{KeyCode.Space, KeyCode.JoystickButton3};
-    internal static List<KeyCode> crouchKeys = new List<KeyCode>{KeyCode.LeftControl, KeyCode.JoystickButton8};
-    internal static List<KeyCode> targetLockKeys = new List<KeyCode>{KeyCode.F, KeyCode.JoystickButton9};
-    internal static List<KeyCode> lightAttackKeys = new List<KeyCode>{KeyCode.Mouse0, KeyCode.JoystickButton5};
-    internal static List<KeyCode> devKeys = new List<KeyCode>{KeyCode.G, KeyCode.JoystickButton2};
+    internal static List<KeyCode> runningKeys = new List<KeyCode>{
+        KeyCode.LeftShift, KeyCode.JoystickButton0};
+    internal static List<KeyCode> jumpKeys = new List<KeyCode>{
+        KeyCode.Space, KeyCode.JoystickButton3};
+    internal static List<KeyCode> crouchKeys = new List<KeyCode>{
+        KeyCode.LeftControl, KeyCode.JoystickButton8};
+    internal static List<KeyCode> targetLockKeys = new List<KeyCode>{
+        KeyCode.F, KeyCode.JoystickButton9};
+    internal static List<KeyCode> lightAttackKeys = new List<KeyCode>{
+        KeyCode.Mouse0, KeyCode.JoystickButton5, KeyCode.E};
+    internal static List<KeyCode> heavyAttackKeys = new List<KeyCode>{
+        KeyCode.Mouse1, KeyCode.JoystickButton5, KeyCode.R};
+    internal static List<KeyCode> specialAttackKeys = new List<KeyCode>{
+        KeyCode.JoystickButton5, KeyCode.T};
+    internal static List<KeyCode> devKeys = new List<KeyCode>{
+        KeyCode.G, KeyCode.JoystickButton2};
 
     void Update() {
         // Get keyboard / controller input

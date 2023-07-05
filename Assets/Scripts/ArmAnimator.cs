@@ -12,12 +12,7 @@ public class ArmAnimator : LimbAnimator {
     // - e.g., inheriting 'feindish-idle' code and 'dagger-thrust'
     // from elsewhere
 
-    TorsoAnimator torso;
-
     protected override void BeforeStart() {
-        // TODO is this gameObject structure gaurenteed?
-        torso = transform.parent.GetComponentInChildren<TorsoAnimator>();
-
         // TODO for now, ignore shoulder, and move bicept
         // TODO is this ok?
         rootBone = GetRootBone().transform.GetChild(0).gameObject;
@@ -28,6 +23,8 @@ public class ArmAnimator : LimbAnimator {
         hint.transform.position = GetMidBone().transform.position - transform.forward * GetLength();
         // Correctly attach shoulders before toso has chance to move
         ParentShoulder();
+        // For now, swapping to using a springy connection
+        SetupSpring();
     }
 
     public void Update() {
@@ -36,8 +33,9 @@ public class ArmAnimator : LimbAnimator {
         // for both new weapon types, and individual animations
         // - like crushing an item, etc
         if (Player.IsDevMode()) return;
-        if (being.Still()) Rest();
-        else IdleCycle();
+        if (being.IsRunning()) RunCycle();
+        else if (being.IsWalking()) WalkCycle();
+        else Rest();
     }
 
     void Rest() {
@@ -45,9 +43,8 @@ public class ArmAnimator : LimbAnimator {
         PlaceTarget(HolsterPos(IsLeft()), RotDown(), true);
     }
 
-    void IdleCycle() {
-        // Idle cycle for walking/running around
-        // - 'pumping' arms
+    void RunCycle() {
+        // Cycle for 'pumping' arms when running
 
         // If we don't have opposing leg,
         // you wouldn't pump that arm, right?
@@ -72,6 +69,11 @@ public class ArmAnimator : LimbAnimator {
         PlaceTarget(currentPos, currentRot, true);
     }
 
+    void WalkCycle() {
+        // For now, just lifting arms a bit
+        PlaceTarget(ChinPos(IsLeft()), RotUp(), true);
+    }
+
     public void LateUpdate() {
         ParentShoulder();
     }
@@ -91,70 +93,12 @@ public class ArmAnimator : LimbAnimator {
 
         // Shorthand for the bone transforms
         var shoulder = skeleton.transform.GetChild(0);
-        var chest = torso.GetChestBone().transform;
+        var chest = GetTorso().GetChestBone().transform;
 
         // Set offset if 1st time:
         if (_shoulderOffset == Vector3.zero) {
             _shoulderOffset = shoulder.position - chest.position;
         } 
         shoulder.position = chest.position + (chest.rotation * _shoulderOffset);
-    }
-
-    // TODO not sure if these 'body sense'
-    // methods should be elsewhere - perhaps torso?
-    // Or a BeingAnimator script on the parent gameObject?
-    Vector3 _holsterPos;
-    public Vector3 HolsterPos(bool left) {
-        // A space near the right hip, where one might
-        // brace a spear, or sheathe a sword, etc
-        if (_holsterPos != Vector3.zero) return _holsterPos;
-        var hipPos = torso.GetRootBone().transform.position;
-        var hipOffset = torso.GetWidth() * .6f * transform.right;
-        // TODO technically, we should use half waist width,
-        // but leaving for now
-
-        if (left) _holsterPos = hipPos - hipOffset;
-        else _holsterPos = hipPos + hipOffset;
-        return _holsterPos;
-    }
-
-    Vector3 _boxerPos;
-    public Vector3 BoxerPos(bool left) {
-        // The space infront of the chest where a boxer
-        // might hold their hands
-        if (_boxerPos != Vector3.zero) return _boxerPos;
-        var chest = torso.GetChestBone().transform.position;
-        var sideOffset = torso.GetWidth() * .25f * transform.right;
-        var frontOffset = torso.GetWidth() * transform.forward;
-        _boxerPos = chest + frontOffset;
-
-        if (left) _boxerPos -= sideOffset;
-        else _boxerPos += sideOffset;
-        return _boxerPos;
-    }
-
-    bool? _isLeft = null;
-    public bool IsLeft() {
-        // is arm is on the left or right of the torso
-        // TODO maybe refactor to have a stronger idea of
-        // 'neither' - in which case make it limb method
-        if (_isLeft != null) return (bool) _isLeft;
-        _isLeft = GetRootBone().transform.localPosition.x > 0;
-        return (bool) _isLeft;
-    }
-
-    public LegAnimator GetLeg(bool opposite=false) {
-        // TODO should this be limb method?
-        // TODO is this leg-finding good?
-        var legs = transform.parent.GetComponentsInChildren<LegAnimator>();
-
-        bool getLeft = IsLeft();
-        if (opposite) getLeft = !getLeft;
-        foreach (LegAnimator l in legs) {
-            bool leftMatches = getLeft && l.gameObject.name.Contains(" L");
-            bool rightMatches = !getLeft && l.gameObject.name.Contains(" R");
-            if (leftMatches || rightMatches) return l;
-        }
-        return null;
     }
 }

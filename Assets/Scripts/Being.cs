@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public abstract class Being : MonoBehaviour {
+public abstract class Being : CustomBehavior {
     // A creature that can walk, jump, etc
     // - like the player, or an npc monster
 
@@ -92,9 +92,6 @@ public abstract class Being : MonoBehaviour {
         else collider.localScale= new Vector3(1, 1, 1);
     }
 
-    public bool IsWalking() { return Rush() > 0.001f; }
-    public bool IsCrouched() { return crouched; }
-
     float coyoteMax = 0.5f;
     float coyoteTimer;
     public bool InAir() {
@@ -138,10 +135,9 @@ public abstract class Being : MonoBehaviour {
     // The % of the controllers max speed they are moving
     public float Rush() { return WalkVelocity().magnitude / runSpeed; }
     public float ForwardRush() { return ForwardVelocity() / runSpeed; }
-    public bool Still() {
-        // If being is largly standing still
-        return Rush() < 0.001;
-    }
+    public bool IsWalking() { return WalkVelocity().magnitude > 0.001f; }
+    public bool IsRunning() { return WalkVelocity().magnitude > walkSpeed; }
+    public bool IsCrouched() { return crouched; }
 
     Vector3 prevVelocity;
     public Vector3 AccelerationToDisplacement(Vector3 acceleration) {

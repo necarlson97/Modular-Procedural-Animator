@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Animations.Rigging;
 
-public class LimbAnimator : MonoBehaviour {
+public class LimbAnimator : CustomBehavior {
     // Holds code for setting up IK for arm / leg / torso / etc
     // - intended to be extended (TODO abstract?)
     // Requires:
@@ -15,21 +15,18 @@ public class LimbAnimator : MonoBehaviour {
     // leg/arms have 'parners' that are named:
     // 'Leg L' and 'Leg R'
 
-    // The character/monster/etc that this limb belongs to
-    protected Being being;
-
-    // Typically, set programatically - but can be overridden
+    // Typically, set programatically
+    // - but can be overridden in prefab editor
     public GameObject rootBone;
     public GameObject midBone;
     public GameObject tipBone;
 
     // Set programatically
-    [System.NonSerialized]
-    public GameObject target;
-    [System.NonSerialized]
-    public GameObject skeleton;
-    [System.NonSerialized]
-    public GameObject hint;
+    internal GameObject target;
+    internal GameObject skeleton;
+    internal GameObject hint;
+    // The character/monster/etc that this limb belongs to
+    internal Being being;
 
     // Just some helper variables
     protected Vector3 _targetStartPos;
@@ -44,6 +41,9 @@ public class LimbAnimator : MonoBehaviour {
         being = transform.parent.GetComponent<Being>();
         target = FindContains("Target");
         skeleton = FindContains("Skeleton");
+
+        // Establish bounds before we setup any IK
+        GetBounds();
 
         // Provide before/after logic hooks for the children
         BeforeStart();
@@ -152,6 +152,17 @@ public class LimbAnimator : MonoBehaviour {
         GetComponent<RigBuilder>().enabled = true;
     }
 
+    protected void SetupSpring() {
+        // It may be that some limbs, we want 'secondary metion'
+        // - like arms. In this case, instead of moving the target itself,
+        // we will move a spring root that is elasticly connected to the target
+        var spring = gameObject.AddComponent<LimbSpring>();
+        // For now, we will have our 'target' be the spring root,
+        // and just trust the ik target to follow
+        // TODO is this sloppy?
+        target = spring.Setup();
+    }
+
     public GameObject GetRootBone() {
         // If the bone is not explicitly set,
         // we will assume the root bone for ik
@@ -212,23 +223,6 @@ public class LimbAnimator : MonoBehaviour {
         return _targetStartPos - target.transform.localPosition;
     }
 
-    public GameObject FindContains(string query) {
-        // Find a child gameobject if it contains a string
-        // (recursive)
-        // TODO could be utility
-        return FindContains(query, transform);
-    }
-    public GameObject FindContains(string query, Transform t) {
-        if (t.name.Contains(query)){
-            return t.gameObject;
-        }
-        foreach (Transform child in t){
-            var found = FindContains(query, child);
-            if (found != null) return found;
-        }
-        return null;
-    }
-
     public void PlaceTarget(Vector3 destination, bool local=false) {
         // Just becasue we will use it often -
         // moving the target more smoothly with lerp
@@ -266,41 +260,230 @@ public class LimbAnimator : MonoBehaviour {
         PlaceTarget(destination, rot, local);
     }
 
-    // For now, finding proper rotations was not producing
-    // expected results with LookAt, and so I'll just provide
-    // some hardcoded shorthands for now
-    // Note: some might be 1 or so degrees 'off'
-    // to encourage lerp to 'choose a desired direction'
-    // TODO bit sloppy - and belongs in utility?
-    public static Quaternion RotForward() { return Q(0, 90, 90); }
-    public static Quaternion RotBackward() { return Q(0, -90, 90); }
-    public static Quaternion RotUp() { return Q(0, 90, 1); }
-    public static Quaternion RotDown() { return Q(0, 90, 180); }
-    public static Quaternion RotLeft() { return Q(0, 0, 90); }
-    public static Quaternion RotRight() { return Q(0, 0, -90); }
-    public static Quaternion Q(float x, float y, float z) {
-        return Quaternion.Euler(x, y, z);   
+    
+    
+    Vector3 _bounds;
+    public Vector3 GetBounds() {
+        // TODO is this implementation bad?
+        // Is it good? Should we be using mesh bound elsewhere?
+        // How likely is it to be wrong because of width variability
+        // along limb length?
+        // TODO should we rotate to account for T-pose and whatnot?
+        // Maybe just make 'Height' the longest and go from there?
+        if (_bounds != Vector3.zero) return _bounds;
+        var mesh = GetComponentInChildren<SkinnedMeshRenderer>();
+        _bounds = mesh.bounds.size;
+        return _bounds;
+    }
+    public float GetWidth() { return GetBounds().x; }
+    public float GetDepth() { return GetBounds().z; }
+    public float GetHeight() { return GetBounds().y; }
+
+    Dictionary<string, Vector3> _leftPositions = new Dictionary<string, Vector3>();
+    Dictionary<string, Vector3> _rightPositions = new Dictionary<string, Vector3>();
+    public Vector3 GetPos(string name, bool? left=null) {
+        // Helper for 'get a known, names position'
+        // Such as 'ChinPos()'
+        var knownLeft = IsLeft(left);
+        var positionDict = _rightPositions;
+        if (knownLeft) positionDict = _leftPositions;
+
+        // If we have it memozied, return that
+        Vector3 pos = _GetMemoizedPos(name, knownLeft);
+        if (pos != null) return pos;
+
+        // Otherwize, call the method name to calcualte it
+        var method = this.GetType().GetMethod(name+"Pos");
+        pos = (Vector3) method.Invoke(this, null);
+        return pos;
+    }
+    public Vector3 _GetMemoizedPos(string name, bool? left=null) {
+        // Check the memoized positions for one by this name
+        var knownLeft = IsLeft(left);
+        var positionDict = _rightPositions;
+        if (knownLeft) positionDict = _leftPositions;
+
+        // If we have it memozied, return that
+        // For now, default to zero - but could switch to null(able)
+        if (!positionDict.ContainsKey(name)) return Vector3.zero;
+        return positionDict[name];
+    }
+    public Vector3 SetPos(string name, Vector3 pos, bool? left=null) {
+        // Memoize a known, named position, such as
+        // 'Chin' for 'ChinPos'
+        var knownLeft = IsLeft(left);
+        var positionDict = _rightPositions;
+        if (knownLeft) positionDict = _leftPositions;
+        positionDict[name] = pos;
+        return pos;
     }
 
-    public static float Remap(float value, float inStart, float inEnd, float outStart, float outEnd) {
-        // Take a value in an expected range, and remap it to a new range
-        // TODO move to utility class
-        var v = (value - inStart) / (inEnd - inStart) * (outEnd - outStart) + outStart;
-        v = Mathf.Max(Mathf.Min(v, outEnd), outStart);
-        return v;
+    // TODO not sure if these 'body sense'
+    // methods should be elsewhere
+    public Vector3 HolsterPos(bool? left=null) {
+        // A space near the right hip, where one might
+        // brace a spear, or sheathe a sword, etc
+        var name = "Holster";
+        var knownLeft = IsLeft(left);
+        // If we have it memozied, return that
+        Vector3 pos = _GetMemoizedPos(name, knownLeft);
+        if (pos != null) return pos;
+
+        var hipPos = GetTorso().GetRootBone().transform.position;
+        var hipOffset = GetTorso().GetWidth() * .6f * transform.right;
+        // TODO technically, we should use half waist width,
+        // but leaving for now
+        if (knownLeft) pos = hipPos - hipOffset;
+        else pos = hipPos + hipOffset;
+
+        // Memoize the results
+        SetPos(name, pos, knownLeft);
+        return pos;
+    }
+
+    public Vector3 BoxerPos(bool? left=null) {
+        // The space infront of the chest where a boxer
+        // might hold their hands
+        var name = "Boxer";
+        var knownLeft = IsLeft(left);
+        // If we have it memozied, return that
+        Vector3 pos = _GetMemoizedPos(name, knownLeft);
+        if (pos != null) return pos;
+
+        var chest = GetTorso().GetChestBone().transform.position;
+        var sideOffset = GetTorso().GetWidth() * .25f * transform.right;
+        var frontOffset = GetTorso().GetWidth() * transform.forward;
+        pos = chest + frontOffset;
+
+        if (knownLeft) pos -= sideOffset;
+        else pos += sideOffset;
+
+        // Memoize the results
+        SetPos(name, pos, knownLeft);
+        return pos;
+    }
+
+    public Vector3 ChinPos(bool? left=null) {
+        // The space infront of the chin,
+        // where one might hold their hands
+        var name = "Chin";
+        var knownLeft = IsLeft(left);
+        // If we have it memozied, return that
+        Vector3 pos = _GetMemoizedPos(name, knownLeft);
+        if (pos != null) return pos;
+
+        var head = GetTorso().target.transform.position;
+        var sideOffset = GetTorso().GetWidth() * .1f * transform.right;
+        var frontOffset = GetTorso().GetDepth() * transform.forward;
+        var vertOffset = GetTorso().GetLength() * -.2f * transform.up;
+        pos = head + frontOffset + vertOffset;
+
+        if (knownLeft) pos -= sideOffset;
+        else pos += sideOffset;
+
+        // Memoize the results
+        SetPos(name, pos, knownLeft);
+        return pos;
+    }
+
+    public Vector3 RaisedPos(bool? left=null) {
+        // The space over the shoulder,
+        // where someone might raise a weapon
+        var name = "Raised";
+        var knownLeft = IsLeft(left);
+        // If we have it memozied, return that
+        Vector3 pos = _GetMemoizedPos(name, knownLeft);
+        if (pos != null) return pos;
+
+        var head = GetTorso().target.transform.position;
+        var sideOffset = GetTorso().GetWidth() * 1.1f * transform.right;
+        var frontOffset = GetTorso().GetWidth() * -.2f * transform.forward;
+        pos = head + frontOffset;
+
+        if (knownLeft) pos -= sideOffset;
+        else pos += sideOffset;
+
+        // Memoize the results
+        SetPos(name, pos, knownLeft);
+        return pos;
+    }
+
+    public Vector3 ExtendedPos(bool? left=null) {
+        // The space over the shoulder,
+        // where someone might raise a weapon
+        var name = "Extended";
+        var knownLeft = IsLeft(left);
+        // If we have it memozied, return that
+        Vector3 pos = _GetMemoizedPos(name, knownLeft);
+        if (pos != null) return pos;
+
+        var chest = GetTorso().GetChestBone().transform.position;
+        var sideOffset = GetTorso().GetWidth() * 1.1f * transform.right;
+        var frontOffset = GetLength() * transform.forward;
+        pos = chest + frontOffset;
+
+        if ((bool) left) pos -= sideOffset;
+        else pos += sideOffset;
+
+        // Memoize the results
+        SetPos(name, pos, knownLeft);
+        return pos;
+    }
+
+    bool? _isLeft = null;
+    public bool IsLeft() {
+        // is arm is on the left or right of the torso
+        // TODO maybe refactor to have a stronger idea of
+        // 'neither' - in which case make it limb method
+        if (_isLeft != null) return (bool) _isLeft;
+        _isLeft = GetRootBone().transform.localPosition.x > 0;
+        return (bool) _isLeft;
+    }
+    public bool IsLeft(bool? left) {
+        // Helper method for when a method is called
+        // with a bool? for left - use it if not null,
+        // otherwise default to if we are on left
+        if (left != null) return (bool) left;
+        return IsLeft();
+    }
+
+    public LegAnimator GetLeg(bool opposite=false) {
+        // TODO should this be limb method?
+        // TODO is this leg-finding good?
+        var legs = transform.parent.GetComponentsInChildren<LegAnimator>();
+
+        bool getLeft = IsLeft();
+        if (opposite) getLeft = !getLeft;
+        foreach (LegAnimator l in legs) {
+            bool leftMatches = getLeft && l.gameObject.name.Contains(" L");
+            bool rightMatches = !getLeft && l.gameObject.name.Contains(" R");
+            if (leftMatches || rightMatches) return l;
+        }
+        return null;
+    }
+
+    TorsoAnimator _torso;
+    public TorsoAnimator GetTorso() {
+        // Get the torso most likely to be associated with this limb
+        // (and memoize)
+        if (_torso != null) return _torso;
+        _torso = transform.parent.GetComponentInChildren<TorsoAnimator>();
+        return _torso;
     }
 
     void OnDrawGizmos() {
         if (target == null) return;
-        // Translucent red
         var size = .1f;
         var dimensions = new Vector3(size, size, size);
-        Gizmos.color = new Color(1f, 0f, 0f, .5f);
+        // Translucent yellow
+        Gizmos.color = new Color(.1f, 1f, 1f, .5f);
         Gizmos.DrawCube(target.transform.position, dimensions);
         if (hint == null) return;
         // Translucent blue
         Gizmos.color = new Color(0f, 0f, 1f, .5f);
         Gizmos.DrawCube(hint.transform.position, dimensions);
-    }
 
+        // TODO REMOVE
+        
+    }
 }
