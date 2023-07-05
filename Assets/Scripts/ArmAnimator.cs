@@ -18,10 +18,58 @@ public class ArmAnimator : LimbAnimator {
         // TODO is this gameObject structure gaurenteed?
         torso = transform.parent.GetComponentInChildren<TorsoAnimator>();
 
-        // For now, arm defaults to using chain-ik
-        // rather than two-bone - to utalize shoulder and whatnot
-        // TODO is this the best way to code this?
-        twoBone = false;
+        // TODO for now, ignore shoulder, and move bicept
+        // TODO is this ok?
+        rootBone = GetRootBone().transform.GetChild(0).gameObject;
+    }
+
+    protected override void AfterStart() {
+        // Elbows point 'behind' when starting in T-pose
+        hint.transform.position = GetMidBone().transform.position - transform.forward * GetLength();
+        // Correctly attach shoulders before toso has chance to move
+        ParentShoulder();
+    }
+
+    public void Update() {
+        // TODO for now
+        // - have to figure how to make this easily extensible 
+        // for both new weapon types, and individual animations
+        // - like crushing an item, etc
+        if (Player.IsDevMode()) return;
+        if (being.Still()) Rest();
+        else IdleCycle();
+    }
+
+    void Rest() {
+        // When standing still, bring arms down to sides
+        PlaceTarget(HolsterPos(IsLeft()), RotDown(), true);
+    }
+
+    void IdleCycle() {
+        // Idle cycle for walking/running around
+        // - 'pumping' arms
+
+        // If we don't have opposing leg,
+        // you wouldn't pump that arm, right?
+        var leg = GetLeg(true);
+        if (leg == null) return;
+
+        // Use opposite leg to show us where we are
+        // in the arm pump motion
+        var legPos = leg.target.transform.localPosition;
+
+        // TODO TESTING
+        var downPos = HolsterPos(IsLeft());
+        var upPos = BoxerPos(IsLeft());
+
+        // Remap where the foot is to a 0-1 lerpable progress
+        var stepRadius = leg.MaxStepLength();
+        var progress = Remap(legPos.z, -stepRadius, stepRadius, .2f, .8f);
+        var currentPos = Vector3.Lerp(downPos, upPos, progress);
+
+        // Simmilarly, lets try lerping our rotation
+        var currentRot = Quaternion.Lerp(RotDown(), RotUp(), progress);
+        PlaceTarget(currentPos, currentRot, true);
     }
 
     public void LateUpdate() {
@@ -42,15 +90,14 @@ public class ArmAnimator : LimbAnimator {
         // less clean for now
 
         // Shorthand for the bone transforms
-        var shoulder = GetRootBone().transform;
+        var shoulder = skeleton.transform.GetChild(0);
         var chest = torso.GetChestBone().transform;
 
-        // TODO FIX REMOVE
         // Set offset if 1st time:
         if (_shoulderOffset == Vector3.zero) {
             _shoulderOffset = shoulder.position - chest.position;
         } 
-        shoulder.position = chest.position + _shoulderOffset;
+        shoulder.position = chest.position + (chest.rotation * _shoulderOffset);
     }
 
     // TODO not sure if these 'body sense'
@@ -61,14 +108,53 @@ public class ArmAnimator : LimbAnimator {
         // A space near the right hip, where one might
         // brace a spear, or sheathe a sword, etc
         if (_holsterPos != Vector3.zero) return _holsterPos;
-        // TODO how wide is torso? Use collider? Or?
-        // TODO y'know, at some point, we are going to need to do mesh calculations
         var hipPos = torso.GetRootBone().transform.position;
-        var hipOffset = torso.GetWidth() * .5f * transform.right;
+        var hipOffset = torso.GetWidth() * .6f * transform.right;
+        // TODO technically, we should use half waist width,
+        // but leaving for now
 
-        if (left) _holsterPos = hipPos + hipOffset;
-        else _holsterPos = hipPos - hipOffset;
-
+        if (left) _holsterPos = hipPos - hipOffset;
+        else _holsterPos = hipPos + hipOffset;
         return _holsterPos;
+    }
+
+    Vector3 _boxerPos;
+    public Vector3 BoxerPos(bool left) {
+        // The space infront of the chest where a boxer
+        // might hold their hands
+        if (_boxerPos != Vector3.zero) return _boxerPos;
+        var chest = torso.GetChestBone().transform.position;
+        var sideOffset = torso.GetWidth() * .25f * transform.right;
+        var frontOffset = torso.GetWidth() * transform.forward;
+        _boxerPos = chest + frontOffset;
+
+        if (left) _boxerPos -= sideOffset;
+        else _boxerPos += sideOffset;
+        return _boxerPos;
+    }
+
+    bool? _isLeft = null;
+    public bool IsLeft() {
+        // is arm is on the left or right of the torso
+        // TODO maybe refactor to have a stronger idea of
+        // 'neither' - in which case make it limb method
+        if (_isLeft != null) return (bool) _isLeft;
+        _isLeft = GetRootBone().transform.localPosition.x > 0;
+        return (bool) _isLeft;
+    }
+
+    public LegAnimator GetLeg(bool opposite=false) {
+        // TODO should this be limb method?
+        // TODO is this leg-finding good?
+        var legs = transform.parent.GetComponentsInChildren<LegAnimator>();
+
+        bool getLeft = IsLeft();
+        if (opposite) getLeft = !getLeft;
+        foreach (LegAnimator l in legs) {
+            bool leftMatches = getLeft && l.gameObject.name.Contains(" L");
+            bool rightMatches = !getLeft && l.gameObject.name.Contains(" R");
+            if (leftMatches || rightMatches) return l;
+        }
+        return null;
     }
 }

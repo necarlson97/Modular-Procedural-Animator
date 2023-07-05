@@ -13,12 +13,6 @@ public class LegAnimator : LimbAnimator {
     protected float stepLengthRatio = .4f;
     protected float stepHeightRatio = .3f;
 
-    protected override void AfterStart() {
-        // For now, we are just going to assume we want the foot,
-        // not the toe tip - so just gram programatically
-        // tipBone = GetMidBone().transform.GetChild(0).gameObject;
-    }
-
     public void Update() {
         PlaceFoot();
         PlaceHips();
@@ -56,9 +50,7 @@ public class LegAnimator : LimbAnimator {
         var footPlacement = GetFootPlacement(
             lastPlacement, _targetStartPos, IsOffset());
 
-        target.transform.position = Vector3.Lerp(
-            target.transform.position, footPlacement, 30 * Time.deltaTime);
-
+        PlaceTarget(footPlacement);
         lastPlacement = footPlacement;
     }
 
@@ -159,13 +151,13 @@ public class LegAnimator : LimbAnimator {
     }
 
     // Step size is a function of how fast we are running
-    float StepLength() {
+    public float StepLength() {
         // Get the general stride length for this walk/run speed
         // (Longer steps when moving forward, shorter when sidestepping)
         var forward = Mathf.Min(.2f, Mathf.Abs(being.ForwardRush()));
         return MaxStepLength() * being.Rush() * forward;
     }
-    float StepHeight() {
+    public float StepHeight() {
         // Get the general step height for this walk/run speed
         return MaxStepHeight() * being.Rush();
     }
@@ -179,8 +171,8 @@ public class LegAnimator : LimbAnimator {
         // given 'angle' in walk cicle elipse
         return StepHeight() * Mathf.Sin(footDegrees * Mathf.Deg2Rad);
     }
-    float MaxStepLength() { return GetLength() * stepLengthRatio; }
-    float MaxStepHeight() { return GetLength() * stepHeightRatio; }
+    public float MaxStepLength() { return GetLength() * stepLengthRatio; }
+    public float MaxStepHeight() { return GetLength() * stepHeightRatio; }
 
     float EllipsePerimiter() {
         // The walk elipse perimiter allows us to determine

@@ -24,8 +24,12 @@ public class LimbAnimator : MonoBehaviour {
     public GameObject tipBone;
 
     // Set programatically
-    protected GameObject target;
-    protected GameObject skeleton;
+    [System.NonSerialized]
+    public GameObject target;
+    [System.NonSerialized]
+    public GameObject skeleton;
+    [System.NonSerialized]
+    public GameObject hint;
 
     // Just some helper variables
     protected Vector3 _targetStartPos;
@@ -119,7 +123,7 @@ public class LimbAnimator : MonoBehaviour {
         }
         // For now, just create a hint empty right infront of the limb,
         // - then we can worry about changing it in a subscript
-        var hint = new GameObject("Hint");
+        hint = new GameObject("Hint");
         hint.transform.SetParent(transform);
         var hintOffset = transform.forward * 0.2f * GetLength();
         hint.transform.position = GetMidBone().transform.position + hintOffset;
@@ -171,20 +175,24 @@ public class LimbAnimator : MonoBehaviour {
     public GameObject GetTipBone() {
         // If the bone is not explicitly set,
         // we will assume the skeleton is a linear
-        // chain, and the tip is simply after the mid
+        // chain, and the tip is near the end
         if (tipBone != null) return tipBone;
         tipBone = GetLastBone();
         return tipBone;
     }
 
     public GameObject GetLastBone() {
-        // Get the last child in the root's descendents
+        // Get the last bone - which is the
+        // penultimate child in the root's descendents
+        // (Note: you can use the last child,
+        //  but that is the bone's tail rather than head)
+
         Transform currentBone = GetRootBone().transform;
         while (currentBone.childCount > 0) {
             var last = currentBone.childCount - 1;
             currentBone = currentBone.GetChild(last);
         }
-        return currentBone.gameObject;
+        return currentBone.parent.gameObject;
     }
 
     float _length = -1;
@@ -219,6 +227,80 @@ public class LimbAnimator : MonoBehaviour {
             if (found != null) return found;
         }
         return null;
+    }
+
+    public void PlaceTarget(Vector3 destination, bool local=false) {
+        // Just becasue we will use it often -
+        // moving the target more smoothly with lerp
+        // TODO the lerp speed will likely be depending on size and
+        // 'personality' - like the idea for 'frenzy' or what-have-you
+        var baseSpeed = 30f;
+        var progress = baseSpeed * Time.deltaTime;
+        if (local) {
+            target.transform.localPosition = Vector3.Lerp(
+                target.transform.localPosition, destination, progress);
+        } else {
+            target.transform.position = Vector3.Lerp(
+                target.transform.position, destination, progress);
+        }
+    }
+    public void PlaceTarget(Vector3 destination, Quaternion rotation, bool local=false) {
+        var baseRotSpeed = 100f;
+        var progress = baseRotSpeed * Time.deltaTime;
+        if (local) {
+            target.transform.localRotation = Quaternion.Slerp(
+                target.transform.localRotation, rotation, progress);
+        } else {
+            target.transform.localRotation = Quaternion.Slerp(
+                target.transform.localRotation, rotation, progress);
+        }
+        PlaceTarget(destination, local);
+    }
+    public void PlaceTarget(Vector3 destination, Vector3 lookAt, bool local=false) {
+        Quaternion rot;
+        if (local) {
+            rot = Quaternion.LookRotation(lookAt, Vector3.up);
+        } else {
+            rot = Quaternion.LookRotation(lookAt, transform.up);
+        }
+        PlaceTarget(destination, rot, local);
+    }
+
+    // For now, finding proper rotations was not producing
+    // expected results with LookAt, and so I'll just provide
+    // some hardcoded shorthands for now
+    // Note: some might be 1 or so degrees 'off'
+    // to encourage lerp to 'choose a desired direction'
+    // TODO bit sloppy - and belongs in utility?
+    public static Quaternion RotForward() { return Q(0, 90, 90); }
+    public static Quaternion RotBackward() { return Q(0, -90, 90); }
+    public static Quaternion RotUp() { return Q(0, 90, 1); }
+    public static Quaternion RotDown() { return Q(0, 90, 180); }
+    public static Quaternion RotLeft() { return Q(0, 0, 90); }
+    public static Quaternion RotRight() { return Q(0, 0, -90); }
+    public static Quaternion Q(float x, float y, float z) {
+        return Quaternion.Euler(x, y, z);   
+    }
+
+    public static float Remap(float value, float inStart, float inEnd, float outStart, float outEnd) {
+        // Take a value in an expected range, and remap it to a new range
+        // TODO move to utility class
+        var v = (value - inStart) / (inEnd - inStart) * (outEnd - outStart) + outStart;
+        v = Mathf.Max(Mathf.Min(v, outEnd), outStart);
+        return v;
+    }
+
+    void OnDrawGizmos() {
+        if (target == null) return;
+        // Translucent red
+        var size = .1f;
+        var dimensions = new Vector3(size, size, size);
+        Gizmos.color = new Color(1f, 0f, 0f, .5f);
+        Gizmos.DrawCube(target.transform.position, dimensions);
+        if (hint == null) return;
+        // Translucent blue
+        Gizmos.color = new Color(0f, 0f, 1f, .5f);
+        Gizmos.DrawCube(hint.transform.position, dimensions);
     }
 
 }

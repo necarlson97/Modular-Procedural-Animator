@@ -138,6 +138,10 @@ public abstract class Being : MonoBehaviour {
     // The % of the controllers max speed they are moving
     public float Rush() { return WalkVelocity().magnitude / runSpeed; }
     public float ForwardRush() { return ForwardVelocity() / runSpeed; }
+    public bool Still() {
+        // If being is largly standing still
+        return Rush() < 0.001;
+    }
 
     Vector3 prevVelocity;
     public Vector3 AccelerationToDisplacement(Vector3 acceleration) {

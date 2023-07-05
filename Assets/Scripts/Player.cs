@@ -5,12 +5,12 @@ using UnityEditor;
 using System.Linq;
 
 public class Player : Being {
-    internal List<KeyCode> runningKeys = new List<KeyCode>{KeyCode.LeftShift, KeyCode.JoystickButton0};
-    internal List<KeyCode> jumpKeys = new List<KeyCode>{KeyCode.Space, KeyCode.JoystickButton3};
-    internal List<KeyCode> crouchKeys = new List<KeyCode>{KeyCode.LeftControl, KeyCode.JoystickButton8};
-    internal List<KeyCode> targetLockKeys = new List<KeyCode>{KeyCode.F, KeyCode.JoystickButton9};
-    internal List<KeyCode> lightAttackKeys = new List<KeyCode>{KeyCode.Mouse0, KeyCode.JoystickButton5};
-    internal List<KeyCode> devKeys = new List<KeyCode>{KeyCode.G, KeyCode.JoystickButton2};
+    internal static List<KeyCode> runningKeys = new List<KeyCode>{KeyCode.LeftShift, KeyCode.JoystickButton0};
+    internal static List<KeyCode> jumpKeys = new List<KeyCode>{KeyCode.Space, KeyCode.JoystickButton3};
+    internal static List<KeyCode> crouchKeys = new List<KeyCode>{KeyCode.LeftControl, KeyCode.JoystickButton8};
+    internal static List<KeyCode> targetLockKeys = new List<KeyCode>{KeyCode.F, KeyCode.JoystickButton9};
+    internal static List<KeyCode> lightAttackKeys = new List<KeyCode>{KeyCode.Mouse0, KeyCode.JoystickButton5};
+    internal static List<KeyCode> devKeys = new List<KeyCode>{KeyCode.G, KeyCode.JoystickButton2};
 
     void Update() {
         // Get keyboard / controller input
@@ -43,12 +43,22 @@ public class Player : Being {
             target.transform.position = transform.position + transform.up + Camera.main.transform.forward;
         }
 
-        Debug.DrawLine(transform.position, transform.position+WalkVelocity(), Color.white);
+        SetDev();
     }
 
+    // Togglable dev mode, and allow
+    // other classes to check if we are in dev mode
+    static bool _dev;
+    void SetDev() {
+        if (devKeys.Any(k => Input.GetKeyDown(k))) _dev = !_dev;
+    }
+    public static bool IsDevMode() { return _dev; }
 
     void OnDrawGizmos()  {
         var s = "";
         Handles.Label(transform.position+Vector3.up, s);
+        if (IsDevMode()) {
+            Debug.DrawLine(transform.position, transform.position+WalkVelocity(), Color.white);
+        }
     }
 }
