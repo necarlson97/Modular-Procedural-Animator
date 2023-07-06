@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UnityEngine.InputSystem;
 
 // This class corresponds to the 3rd person camera features.
 public class ThirdPersonOrbitCamBasic : MonoBehaviour 
@@ -14,8 +15,10 @@ public class ThirdPersonOrbitCamBasic : MonoBehaviour
 
 	public float maxVerticalAngle = 30f;
 	public float minVerticalAngle = -60f;
-	internal string XAxis = "Look X";
-	internal string YAxis = "Look Y";
+
+	// How to get player input from the new InputAction system
+	internal string lookInputName = "Look";
+	InputAction lookInput;
 
 	private float angleH = 0;
 	private float angleV = 0;
@@ -33,6 +36,11 @@ public class ThirdPersonOrbitCamBasic : MonoBehaviour
 	public float GetH { get { return angleH; } }
 
 	void Awake() {
+		// Load the inputs
+		var actions = Resources.Load<InputActionAsset>("New Controls");
+        var actionMap = actions.FindActionMap("Player Input");
+        lookInput = actionMap.FindAction("Look");
+
 		// Reference to the camera transform.
 		cam = transform;
 
@@ -63,24 +71,30 @@ public class ThirdPersonOrbitCamBasic : MonoBehaviour
 	}
 
 	void Update() {
-		// Get mouse movement to orbit the camera.
-		// Only use Mouse when it is captured:
-		if (Cursor.lockState == CursorLockMode.Locked) {
-			angleH += Mathf.Clamp(Input.GetAxis("Mouse X"), -1, 1) * horizontalAimingSpeed;
-			angleV += Mathf.Clamp(Input.GetAxis("Mouse Y"), -1, 1) * verticalAimingSpeed;
+		// Get mouse/gamepad movement to orbit the camera.
+		// If the cursor is free, only use the "Gamepad" bindings for look
+		
+		// TODO this will need to be more complex with any other logic
+		// TODO should we handle this here? In CustomInput?
+		// Enable mouse control if they click on screen,
+		// disable if escaped
+		if (CustomInput.GetDown("Mouse Click")) {
+			Cursor.lockState = CursorLockMode.Locked;
 		}
-		// Joystick:
-		angleH += Mathf.Clamp(Input.GetAxis(XAxis), -1, 1) * 60 * horizontalAimingSpeed * Time.deltaTime;
-		angleV -= Mathf.Clamp(Input.GetAxis(YAxis), -1, 1) * 60 * verticalAimingSpeed * Time.deltaTime;
+		if (CustomInput.GetDown("Escape")) {
+			Cursor.lockState = CursorLockMode.None;
+		}
+		// If mouse is locked, use mouse and gamepad,
+		// if mouse is 'free' - just gamepad
+	    if (Cursor.lockState == CursorLockMode.Locked) {
+	        lookInput.bindingMask = null;
+	    } else {
+	        lookInput.bindingMask = new InputBinding { groups = "Gamepad" };
+	    }
 
-		// Toggle mouse control when they right click
-		if (Input.GetMouseButtonDown(1)) {
-			if (Cursor.lockState == CursorLockMode.Locked)
-				Cursor.lockState = CursorLockMode.None;
-			else Cursor.lockState = CursorLockMode.Locked;
-		}
-		if (Input.GetKeyDown("escape")) Cursor.lockState = CursorLockMode.None;
-		// TODO should be elsewhere
+		var input = lookInput.ReadValue<Vector2>();
+		angleH += Mathf.Clamp(input.x, -1, 1) * 60 * horizontalAimingSpeed * Time.deltaTime;
+		angleV -= Mathf.Clamp(input.y, -1, 1) * 60 * verticalAimingSpeed * Time.deltaTime;
 
 		// Set vertical movement limit.
 		angleV = Mathf.Clamp(angleV, minVerticalAngle, targetMaxVerticalAngle);

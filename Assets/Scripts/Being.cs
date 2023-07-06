@@ -58,10 +58,18 @@ public abstract class Being : CustomBehavior {
         // when backpeadling
     }
 
-    protected void UpdateAttack(bool attacked) {
+    protected void UpdateLightAttack(bool attacked) {
         // TODO 'hitbox', attack sequences, etc, etc
         if (!attacked) return;
-        Debug.Log("slash");
+        Debug.Log("light attack");
+    }
+    protected void UpdateHeavyAttack(bool attacked) {
+        if (!attacked) return;
+        Debug.Log("heavy attack");
+    }
+    protected void UpdateSpecialAttack(bool attacked) {
+        if (!attacked) return;
+        Debug.Log("special attack");
     }
 
     float jumpTimer;
