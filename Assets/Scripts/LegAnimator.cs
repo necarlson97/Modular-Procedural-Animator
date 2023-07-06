@@ -99,7 +99,7 @@ public class LegAnimator : LimbAnimator {
         // * stationary where it hit the ground
 
         // (if first frame)
-        if (lastPlacement == Vector3.zero) {
+        if (lastPlacement == default(Vector3)) {
             lastPlacement = target.transform.position;
         }
         // TODO currently 'lastPlacement' will always be one frame 'above'

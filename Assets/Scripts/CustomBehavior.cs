@@ -88,15 +88,16 @@ public class CustomBehavior : MonoBehaviour {
         return LeftOrRight(t.forward, t.up, target-t.position);
     }
 
-    // Just for viewing Dictionaries in unity's editor
-    public List<List<SerializableKV>> dicts;
-    public List<SerializableKV> ViewDict(Dictionary<string, Vector3> dictionary) {
+    public List<SerializableKV> dict;
+    public void ViewDict(Dictionary<string, Vector3> dictionary) {
+        // Just for viewing Dictionaries in unity's editor
+        // Note: wanted to be able to view a bunch of dicts at once,
+        // but cannot serlialize list of lists
         List<SerializableKV> list = new List<SerializableKV>();
         foreach (KeyValuePair<string, Vector3> pair in dictionary) {
             list.Add(new SerializableKV(pair.Key, pair.Value));
         }
-        dicts.Add(list);
-        return list;
+        dict = list;
     }
 }
 

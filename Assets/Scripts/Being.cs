@@ -16,6 +16,37 @@ public abstract class Being : CustomBehavior {
     // What is the being target locked / attacking / talking to / etc
     internal GameObject target;
 
+    // Want easy methods for player/monster classes
+    // to call to set movement/behavior/etc
+    Vector3 _lookAt;
+    public void SetLook(Vector3 look) { _lookAt = look; }
+    Vector3 _movement;
+    public void SetMovement(Vector3 move) { _movement = move; }
+    bool _crouching;
+    public void ToggleCrouch() { _crouching = !_crouching; }
+    public void StartCrouch() { _crouching = true; }
+    public void StopCrouch() { _crouching = false; }
+    bool _running;
+    public void ToggleRun() { _running = !_running; }
+    public void StartRun() { _running = true; }
+    public void StopRun() { _running = false; }
+
+    void Update() {
+        // This unity built-in method takes no parameters of course,
+        // but the being will use 'SetLook', 'SetMovement', 'Crouch', etc
+        // to change it's behavior.
+        BeforeUpdate(); // Lifecycle hook for children
+
+        UpdateLook(_lookAt);
+        UpdateJump();
+        UpdateCrouch();
+        UpdateWalk(_movement, _running);
+
+        AfterUpdate();
+    }
+    protected virtual void BeforeUpdate(){}
+    protected virtual void AfterUpdate(){}
+
     protected void UpdateLook(Vector3? lookAt=null) {
         // Update the players body position, if it should be
         // looking at a specific target
@@ -58,70 +89,81 @@ public abstract class Being : CustomBehavior {
         // when backpeadling
     }
 
-    protected void UpdateLightAttack(bool attacked) {
-        // TODO 'hitbox', attack sequences, etc, etc
-        if (!attacked) return;
+    protected void LightAttack() {
+        // TODO 'hitbox', attack sequences, input buffer, etc, etc
         Debug.Log("light attack");
     }
-    protected void UpdateHeavyAttack(bool attacked) {
-        if (!attacked) return;
+    protected void HeavyAttack() {
         Debug.Log("heavy attack");
     }
-    protected void UpdateSpecialAttack(bool attacked) {
-        if (!attacked) return;
+    protected void SpecialAttack() {
         Debug.Log("special attack");
     }
 
-    float jumpTimer;
-    protected void UpdateJump(bool jumped) {
-        // Check to see if the being wishes to jump,
-        // and handle duplicate jumps, coyote jumps, etc
-        jumpTimer -= Time.deltaTime;
-        if (jumped && !InAir()) Jump();
+    public void Jump() {
+        // Being wishes to jump
+        // TODO should buffer/queue this stuff
+        if (!CanJump()) return;
+        _jumpTimer = 0;
+        GetComponent<Rigidbody>().AddForce(transform.up * jumpForce); 
     }
-    void Jump() {
-        GetComponent<Rigidbody>().AddForce(transform.up * jumpForce);
-        jumpTimer = 1f; // Time before a grounded player can jump again
+    // Time before a player can jump again
+    float _jumpMax = 1f;
+    float _jumpTimer;
+    // Time after a ledge a player can still jump
+    float _coyoteMax = 0.5f;
+    float _coyoteTimer;
+    public bool CanJump() {
+        // Returns true if player is on ground
+        // (or coyote time) and hasn't just jumped
+        return _coyoteTimer < _coyoteMax && _jumpTimer > _jumpMax;
     }
-    bool _prejump;
-    protected void UpdatePreJump(bool prejump) {
-        // Before jump, do a bit of crouching down
-        _prejump = prejump;
-    }
-
-    bool crouched; // Crouching is toggled
-    protected void UpdateCrouch(bool toggleCrouch) {
-        // Check to see if being is crouched
-        if (toggleCrouch) crouched = !crouched;
-        
-        var collider = transform.Find("Walk Collider");
-        if (crouched) collider.localScale = new Vector3(1, .65f, 1);
-        else if (_prejump) collider.localScale = new Vector3(1, .85f, 1);
-        else collider.localScale= new Vector3(1, 1, 1);
-    }
-
-    float coyoteMax = 0.5f;
-    float coyoteTimer;
     public bool InAir() {
-        // Return true when the player is considered
-        // airborn - both for animation sake, and jumping sake
-        // TODO sloppy, changes dependent on # of times called
+        // Return true when the player is airborn
         var distance = .1f;
         var start = BottomPoint();
         var direction = new Vector3(0, -distance, 0);
         RaycastHit hit;
 
         var rc = GetComponent<Rigidbody>();
-        coyoteTimer = - Time.deltaTime;
         if (Physics.Raycast(start, direction, out hit, distance)) {
-            // If we are at walking on the ground, we get coyote back
-            coyoteTimer = 0;
-        } else coyoteTimer += Time.deltaTime;
-        return coyoteTimer > coyoteMax || jumpTimer > 0;
+            return false;
+        }
+        return true;
     }
+    protected void UpdateJump() {
+        // Check to see if the being wishes to jump,
+        // and handle duplicate jumps, coyote jumps, etc
+
+        // Whenever we walk on the ground, we get coyote back
+        if (InAir()) {
+            _coyoteTimer += Time.deltaTime;
+            _prejump = false;
+        }
+        else _coyoteTimer = 0;
+        // For now, jump recharges in air and on ground
+        _jumpTimer += Time.deltaTime;
+    }
+    bool _prejump;
+    protected void PrepJump(float prepTime=-1) {
+        // Before jump, do a bit of squatting down
+        _prejump = true;
+        // If we want the being to 'automatically'
+        // jump after a set time
+        if (prepTime >= 0) Invoke("Jump", prepTime);
+    }
+
+    protected void UpdateCrouch() {
+        // Handle crouching, squatting before jump, etc
+        var collider = transform.Find("Walk Collider");
+        if (_crouching) collider.localScale = new Vector3(1, .65f, 1);
+        else if (_prejump) collider.localScale = new Vector3(1, .55f, 1);
+        else collider.localScale= new Vector3(1, 1, 1);
+    }
+
     public Vector3 BottomPoint() {
-        // Find a low point in the center, just above the ground, to use for
-        // telling if we are airborne
+        // Find a low point in the center, just above the ground
+        // (e.g. telling if we are airborne)
         var y = transform.Find("Walk Collider").GetComponent<Collider>().bounds.min.y;
         return new Vector3(transform.position.x, y+.001f, transform.position.z);
     }
@@ -136,37 +178,38 @@ public abstract class Being : CustomBehavior {
     }
     public float ForwardVelocity() {
         // How much of this player's velocity is moving forward,
-        // becomes a positive or negative velocity float 
+        // - can be positive or negative
         return Vector3.Dot(WalkVelocity(), transform.forward);
     }
     public bool MovingFoward() { return ForwardVelocity() > 0; }
     // The % of the controllers max speed they are moving
     public float Rush() { return WalkVelocity().magnitude / runSpeed; }
     public float ForwardRush() { return ForwardVelocity() / runSpeed; }
+    // TODO should we use _running bool here?
     public bool IsWalking() { return WalkVelocity().magnitude > 0.001f; }
     public bool IsRunning() { return WalkVelocity().magnitude > walkSpeed; }
-    public bool IsCrouched() { return crouched; }
+    public bool IsCrouched() { return _crouching; }
 
-    Vector3 prevVelocity;
+    Vector3 _prevVelocity;
     public Vector3 AccelerationToDisplacement(Vector3 acceleration) {
         // We want the player to move with constant,
         // frame independant acceleration - so we apply
-        // acceleration, and return the 
-        Vector3 currentVelocity = prevVelocity + acceleration * Time.deltaTime; 
-        Vector3 displacement = prevVelocity * Time.deltaTime + (currentVelocity - prevVelocity) / 2 * Time.deltaTime;
-
+        // acceleration, and return the movement
+        Vector3 currentVelocity = _prevVelocity + acceleration * Time.deltaTime; 
+        Vector3 displacement = (
+            _prevVelocity * Time.deltaTime + (currentVelocity - _prevVelocity) / 2 * Time.deltaTime
+        );
         // TODO is this correct?
-        prevVelocity = currentVelocity *= 0.95f; // Dampening
+        _prevVelocity = currentVelocity *= 0.95f; // Dampening
         return displacement;
     }
 
     public Vector3 AccelerationToVelocity(Vector3 acceleration, float maxVelocity) {
         // We want the player to move with constant,
         // frame independant acceleration - so we apply
-        // acceleration, and return the
-
-        Vector3 currentVelocity = prevVelocity + acceleration * Time.deltaTime; 
-        prevVelocity = Vector3.Lerp(currentVelocity, Vector3.zero, 50 * Time.deltaTime); // Dampening
+        // acceleration, and return the velocity
+        Vector3 currentVelocity = _prevVelocity + acceleration * Time.deltaTime; 
+        _prevVelocity = Vector3.Lerp(currentVelocity, Vector3.zero, 50 * Time.deltaTime); // Dampening
 
         // TODO technically I'd like running to not slow
         // suddenly when they release shift - but leaving for now

@@ -44,12 +44,22 @@ public class LimbAnimator : CustomBehavior {
 
         // Establish bounds before we setup any IK
         GetBounds();
-
         // Provide before/after logic hooks for the children
         BeforeStart();
         SetupRig();
         if (twoBone) SetupTwoBone();
         else SetupChain();
+
+        // Set the references while we are in a neutral position
+        // TODO sloppy
+        HolsterPos();
+        WaistPos();
+        BoxerPos();
+        ChinPos();
+        RaisedPos();
+        ExtendedPos();
+        DownPos();
+
         AfterStart();
     }
     protected virtual void BeforeStart(){}
@@ -260,17 +270,14 @@ public class LimbAnimator : CustomBehavior {
         PlaceTarget(destination, rot, local);
     }
 
-    
-    
     Vector3 _bounds;
     public Vector3 GetBounds() {
         // TODO is this implementation bad?
-        // Is it good? Should we be using mesh bound elsewhere?
         // How likely is it to be wrong because of width variability
         // along limb length?
         // TODO should we rotate to account for T-pose and whatnot?
         // Maybe just make 'Height' the longest and go from there?
-        if (_bounds != Vector3.zero) return _bounds;
+        if (_bounds != default(Vector3)) return _bounds;
         var mesh = GetComponentInChildren<SkinnedMeshRenderer>();
         _bounds = mesh.bounds.size;
         return _bounds;
@@ -284,16 +291,20 @@ public class LimbAnimator : CustomBehavior {
     public Vector3 GetPos(string name, bool? left=null) {
         // Helper for 'get a known, names position'
         // Such as 'ChinPos()'
+        // TODO not sure if these 'body sense'
+        // methods should be on a different class
         var knownLeft = IsLeft(left);
         var positionDict = _rightPositions;
         if (knownLeft) positionDict = _leftPositions;
+        
 
         // If we have it memozied, return that
         Vector3 pos = _GetMemoizedPos(name, knownLeft);
-        if (pos != null) return pos;
+        if (pos != default(Vector3)) return pos;
 
         // Otherwize, call the method name to calcualte it
         var method = this.GetType().GetMethod(name+"Pos");
+        if (method == null) Debug.LogError("Could not find method for "+name+"Pos");
         pos = (Vector3) method.Invoke(this, null);
         return pos;
     }
@@ -302,10 +313,9 @@ public class LimbAnimator : CustomBehavior {
         var knownLeft = IsLeft(left);
         var positionDict = _rightPositions;
         if (knownLeft) positionDict = _leftPositions;
-
         // If we have it memozied, return that
         // For now, default to zero - but could switch to null(able)
-        if (!positionDict.ContainsKey(name)) return Vector3.zero;
+        if (!positionDict.ContainsKey(name)) return default(Vector3);
         return positionDict[name];
     }
     public Vector3 SetPos(string name, Vector3 pos, bool? left=null) {
@@ -318,8 +328,6 @@ public class LimbAnimator : CustomBehavior {
         return pos;
     }
 
-    // TODO not sure if these 'body sense'
-    // methods should be elsewhere
     public Vector3 HolsterPos(bool? left=null) {
         // A space near the right hip, where one might
         // brace a spear, or sheathe a sword, etc
@@ -327,7 +335,7 @@ public class LimbAnimator : CustomBehavior {
         var knownLeft = IsLeft(left);
         // If we have it memozied, return that
         Vector3 pos = _GetMemoizedPos(name, knownLeft);
-        if (pos != null) return pos;
+        if (pos != default(Vector3)) return pos;
 
         var hipPos = GetTorso().GetRootBone().transform.position;
         var hipOffset = GetTorso().GetWidth() * .6f * transform.right;
@@ -340,7 +348,26 @@ public class LimbAnimator : CustomBehavior {
         SetPos(name, pos, knownLeft);
         return pos;
     }
+    public Vector3 WaistPos(bool? left=null) {
+        // A space a by the waist, where
+        // one might hold their arms comfortable - but not limp
+        var name = "Waist";
+        var knownLeft = IsLeft(left);
+        // If we have it memozied, return that
+        Vector3 pos = _GetMemoizedPos(name, knownLeft);
+        if (pos != default(Vector3)) return pos;
 
+        var hipPos = GetTorso().GetRootBone().transform.position;
+        var hipOffset = GetTorso().GetWidth() * .6f * transform.right;
+        var vertOffset = GetTorso().GetLength() * .1f * transform.up;
+        pos = hipPos + vertOffset;
+        if (knownLeft) pos -= hipOffset;
+        else pos += hipOffset;
+
+        // Memoize the results
+        SetPos(name, pos, knownLeft);
+        return pos;
+    }
     public Vector3 BoxerPos(bool? left=null) {
         // The space infront of the chest where a boxer
         // might hold their hands
@@ -348,11 +375,11 @@ public class LimbAnimator : CustomBehavior {
         var knownLeft = IsLeft(left);
         // If we have it memozied, return that
         Vector3 pos = _GetMemoizedPos(name, knownLeft);
-        if (pos != null) return pos;
+        if (pos != default(Vector3)) return pos;
 
         var chest = GetTorso().GetChestBone().transform.position;
         var sideOffset = GetTorso().GetWidth() * .25f * transform.right;
-        var frontOffset = GetTorso().GetWidth() * transform.forward;
+        var frontOffset = GetTorso().GetDepth() * transform.forward;
         pos = chest + frontOffset;
 
         if (knownLeft) pos -= sideOffset;
@@ -362,7 +389,6 @@ public class LimbAnimator : CustomBehavior {
         SetPos(name, pos, knownLeft);
         return pos;
     }
-
     public Vector3 ChinPos(bool? left=null) {
         // The space infront of the chin,
         // where one might hold their hands
@@ -370,7 +396,7 @@ public class LimbAnimator : CustomBehavior {
         var knownLeft = IsLeft(left);
         // If we have it memozied, return that
         Vector3 pos = _GetMemoizedPos(name, knownLeft);
-        if (pos != null) return pos;
+        if (pos != default(Vector3)) return pos;
 
         var head = GetTorso().target.transform.position;
         var sideOffset = GetTorso().GetWidth() * .1f * transform.right;
@@ -385,7 +411,6 @@ public class LimbAnimator : CustomBehavior {
         SetPos(name, pos, knownLeft);
         return pos;
     }
-
     public Vector3 RaisedPos(bool? left=null) {
         // The space over the shoulder,
         // where someone might raise a weapon
@@ -393,7 +418,7 @@ public class LimbAnimator : CustomBehavior {
         var knownLeft = IsLeft(left);
         // If we have it memozied, return that
         Vector3 pos = _GetMemoizedPos(name, knownLeft);
-        if (pos != null) return pos;
+        if (pos != default(Vector3)) return pos;
 
         var head = GetTorso().target.transform.position;
         var sideOffset = GetTorso().GetWidth() * 1.1f * transform.right;
@@ -407,7 +432,6 @@ public class LimbAnimator : CustomBehavior {
         SetPos(name, pos, knownLeft);
         return pos;
     }
-
     public Vector3 ExtendedPos(bool? left=null) {
         // The space over the shoulder,
         // where someone might raise a weapon
@@ -415,14 +439,34 @@ public class LimbAnimator : CustomBehavior {
         var knownLeft = IsLeft(left);
         // If we have it memozied, return that
         Vector3 pos = _GetMemoizedPos(name, knownLeft);
-        if (pos != null) return pos;
+        if (pos != default(Vector3)) return pos;
 
         var chest = GetTorso().GetChestBone().transform.position;
         var sideOffset = GetTorso().GetWidth() * 1.1f * transform.right;
         var frontOffset = GetLength() * transform.forward;
         pos = chest + frontOffset;
 
-        if ((bool) left) pos -= sideOffset;
+        if (knownLeft) pos -= sideOffset;
+        else pos += sideOffset;
+
+        // Memoize the results
+        SetPos(name, pos, knownLeft);
+        return pos;
+    }
+    public Vector3 DownPos(bool? left=null) {
+        // Hands all the way down by your sides
+        var name = "Down";
+        var knownLeft = IsLeft(left);
+        // If we have it memozied, return that
+        Vector3 pos = _GetMemoizedPos(name, knownLeft);
+        if (pos != default(Vector3)) return pos;
+
+        var root = GetRootBone();
+        var sideOffset = GetTorso().GetWidth() * .6f * transform.right;
+        var vertOffset = GetLength() * -transform.up;
+        pos = root + vertOffset;
+
+        if (knownLeft) pos -= sideOffset;
         else pos += sideOffset;
 
         // Memoize the results
@@ -484,6 +528,6 @@ public class LimbAnimator : CustomBehavior {
         Gizmos.DrawCube(hint.transform.position, dimensions);
 
         // TODO REMOVE
-        
+        ViewDict(_leftPositions);
     }
 }

@@ -6,27 +6,52 @@ using System.Linq;
 
 public class Player : Being {
 
-    void Update() {
+    void Start() {
+        // Intilize callbacks from our player input
+        CustomInput.GetAction("Crouch").canceled += (
+            ctx => { ToggleCrouch(); }
+        );
+        CustomInput.GetAction("Run").started += (
+            ctx => { StartRun(); }
+        );
+        CustomInput.GetAction("Run").canceled += (
+            ctx => { StopRun(); }
+        );
+
+        // TODO for now, test press/release jump
+        CustomInput.GetAction("Jump").started += (
+            ctx => { PrepJump(); }
+        );
+        CustomInput.GetAction("Jump").canceled += (
+            ctx => { Jump(); }
+        );
+
+        CustomInput.GetAction("Light Attack").canceled += (
+            ctx => { LightAttack(); }
+        );
+        CustomInput.GetAction("Heavy Attack").canceled += (
+            ctx => { HeavyAttack(); }
+        );
+        CustomInput.GetAction("Special Attack").canceled += (
+            ctx => { SpecialAttack(); }
+        );
+    }
+
+    protected override void BeforeUpdate() {
         // Get keyboard / controller input
         var input = CustomInput.GetAxis("Movement");
+        // Input we get as x/y, but we want to move on x/z
+        var movement = new Vector3(input.x, 0, input.y);
         // Rotate that to move where the camera is looking
-        // TODO limit to just 1 axis?
-        input = Camera.main.transform.rotation * input;
+        movement = Camera.main.transform.rotation * movement;
+
+        // TODO is this what we want?
+        if (!InAir()) SetMovement(movement);
+        
 
         // Look at our target lock, or just where the camera's pointing
         var camLook = transform.position + Camera.main.transform.forward;
-        UpdateLook(target != null ? target.transform.position : camLook);
-
-        // Move dependent on user input
-        // TODO for now, test press/release jump
-        UpdatePreJump(CustomInput.GetDown("Jump"));
-        UpdateJump(CustomInput.GetUp("Jump"));
-        UpdateCrouch(CustomInput.GetDown("Crouch"));
-        UpdateWalk(input, CustomInput.Get("Run"));
-
-        UpdateLightAttack(CustomInput.GetDown("Light Attack"));
-        UpdateHeavyAttack(CustomInput.GetDown("Heavy Attack"));
-        UpdateSpecialAttack(CustomInput.GetDown("Special Attack"));
+        SetLook(target != null ? target.transform.position : camLook);
 
         // Engage / disengage target lock
         // TODO for now, just a test object

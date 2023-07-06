@@ -13,19 +13,19 @@ public class TorsoAnimator : LimbAnimator {
         // but keep head focused on lock-on
         LeanTorso();
         // TODO idle breathing?
-        // TODO look at focus?
+        // TODO look at something nearby?
+        // What you could pick up?
+        // Or what enemy you would target?
     }
 
     void LeanTorso() {
         // Given the characters velocity, tilt
         // "into" the movement, as humans do
-        // TODO programatic way to find lean size
         var leanDirection = being.WalkVelocity().normalized * being.Rush() * MaxLean();
 
         if (being.IsCrouched())  leanDirection += transform.forward * .2f;
 
         // TODO ideally could make a smoother, teardrop shape or whatever
-        // TODO forward rush? Something
         if (!being.MovingFoward()) leanDirection *= .5f;
 
         var leanFrom = target.transform.position;

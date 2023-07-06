@@ -12,6 +12,10 @@ public class ArmAnimator : LimbAnimator {
     // - e.g., inheriting 'feindish-idle' code and 'dagger-thrust'
     // from elsewhere
 
+    // TODO REMOVE
+    // just for testing
+    public string testPos;
+
     protected override void BeforeStart() {
         // TODO for now, ignore shoulder, and move bicept
         // TODO is this ok?
@@ -28,11 +32,17 @@ public class ArmAnimator : LimbAnimator {
     }
 
     public void Update() {
-        // TODO for now
-        // - have to figure how to make this easily extensible 
-        // for both new weapon types, and individual animations
-        // - like crushing an item, etc
+        // Handle normal 'default' behavior for arms
+        // - when they arent using weapons, or items, etc
+        // (have to figure how to make this easily extensible still)
+
+        // Testing / debug
         if (Player.IsDevMode()) return;
+        if (testPos != "") {
+            PlaceTarget(GetPos(testPos), true);
+            return;
+        }
+
         if (being.IsRunning()) RunCycle();
         else if (being.IsWalking()) WalkCycle();
         else Rest();
@@ -40,7 +50,7 @@ public class ArmAnimator : LimbAnimator {
 
     void Rest() {
         // When standing still, bring arms down to sides
-        PlaceTarget(HolsterPos(IsLeft()), RotDown(), true);
+        PlaceTarget(DownPos(IsLeft()), RotDown(), true);
     }
 
     void RunCycle() {
@@ -55,7 +65,6 @@ public class ArmAnimator : LimbAnimator {
         // in the arm pump motion
         var legPos = leg.target.transform.localPosition;
 
-        // TODO TESTING
         var downPos = HolsterPos(IsLeft());
         var upPos = BoxerPos(IsLeft());
 
@@ -64,14 +73,27 @@ public class ArmAnimator : LimbAnimator {
         var progress = Remap(legPos.z, -stepRadius, stepRadius, .2f, .8f);
         var currentPos = Vector3.Lerp(downPos, upPos, progress);
 
+        // Rotate the placement around the movement vector
+        // Limiting to 'forward' angles
+        var angleLimit = 35;
+        var moveEuler = (
+            Quaternion.LookRotation(being.WalkVelocity())
+            * Quaternion.Inverse(transform.rotation)
+        ).eulerAngles;
+        if (moveEuler.y > 180) moveEuler.y -= 360;
+        if (moveEuler.y > -angleLimit && moveEuler.y < angleLimit) {
+            currentPos = Quaternion.Euler(moveEuler) * currentPos;
+        }
+        
         // Simmilarly, lets try lerping our rotation
-        var currentRot = Quaternion.Lerp(RotDown(), RotUp(), progress);
+        var currentRot = Quaternion.Lerp(RotForward(), RotUp(), progress);
+        currentRot = Quaternion.Euler(moveEuler) * currentRot;
         PlaceTarget(currentPos, currentRot, true);
     }
 
     void WalkCycle() {
         // For now, just lifting arms a bit
-        PlaceTarget(ChinPos(IsLeft()), RotUp(), true);
+        PlaceTarget(WaistPos(IsLeft()), RotForward(), true);
     }
 
     public void LateUpdate() {
@@ -96,7 +118,7 @@ public class ArmAnimator : LimbAnimator {
         var chest = GetTorso().GetChestBone().transform;
 
         // Set offset if 1st time:
-        if (_shoulderOffset == Vector3.zero) {
+        if (_shoulderOffset == default(Vector3)) {
             _shoulderOffset = shoulder.position - chest.position;
         } 
         shoulder.position = chest.position + (chest.rotation * _shoulderOffset);

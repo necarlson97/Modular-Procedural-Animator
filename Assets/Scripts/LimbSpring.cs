@@ -69,7 +69,7 @@ public class LimbSpring : CustomBehavior {
         // TODO clamp displacement, and 'snap' when close
         // Add a bit of the parent rigidbody into the calculation
         // TODO is this a good way to do it?
-        velocity += limb.being.GetComponent<Rigidbody>().velocity * .05f;
+        velocity += limb.being.GetComponent<Rigidbody>().velocity * .1f;
     }
 
     void HandleRot() {
