@@ -6,7 +6,7 @@ using System.Linq;
 
 public class Player : Being {
 
-    void Start() {
+    protected override void AfterStart() {
         // Intilize callbacks from our player input
         CustomInput.GetAction("Crouch").canceled += (
             ctx => { ToggleCrouch(); }
@@ -34,6 +34,13 @@ public class Player : Being {
         );
         CustomInput.GetAction("Special Attack").canceled += (
             ctx => { SpecialAttack(); }
+        );
+
+        CustomInput.GetAction("Gaurd").started += (
+            ctx => { StartGaurd(); }
+        );
+        CustomInput.GetAction("Gaurd").canceled += (
+            ctx => { StopGaurd(); }
         );
     }
 

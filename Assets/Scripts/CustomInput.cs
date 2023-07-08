@@ -13,7 +13,7 @@ public static class CustomInput {
     static string[] inputNames = {
         "Movement", "Look",
         "Run", "Jump", "Crouch",
-        "Target Lock",
+        "Target Lock", "Gaurd",
         "Light Attack", "Heavy Attack", "Special Attack",
         "Dev Key",
         "Mouse Click", "Escape"
@@ -67,7 +67,4 @@ public static class CustomInput {
         if (!inputs.ContainsKey(name)) Debug.LogError("Did not find action: "+name);
         return inputs[name];
     }
-
-    
-
 }

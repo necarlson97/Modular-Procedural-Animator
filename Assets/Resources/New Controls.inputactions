@@ -54,9 +54,17 @@
                     "interactions": ""
                 },
                 {
-                    "name": "Special Attack",
+                    "name": "Gaurd",
                     "type": "Button",
-                    "id": "88839f92-60d2-4a6b-a1b9-56ad2517c066",
+                    "id": "b0dd6819-3ddc-4e0a-a800-d10c4d0e7af5",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": ""
+                },
+                {
+                    "name": "Light Attack",
+                    "type": "Button",
+                    "id": "8de36527-7179-4c95-855d-9135e1a8b38f",
                     "expectedControlType": "Button",
                     "processors": "",
                     "interactions": ""
@@ -70,9 +78,9 @@
                     "interactions": ""
                 },
                 {
-                    "name": "Light Attack",
+                    "name": "Special Attack",
                     "type": "Button",
-                    "id": "8de36527-7179-4c95-855d-9135e1a8b38f",
+                    "id": "88839f92-60d2-4a6b-a1b9-56ad2517c066",
                     "expectedControlType": "Button",
                     "processors": "",
                     "interactions": ""
@@ -248,52 +256,8 @@
                 },
                 {
                     "name": "",
-                    "id": "da4421e7-871f-4832-b185-291abfb156a5",
-                    "path": "<Gamepad>/rightShoulder",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "",
-                    "action": "Light Attack",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
-                    "id": "238d1249-7e24-482c-97d4-e0c3cbf79ad5",
-                    "path": "<Mouse>/leftButton",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "",
-                    "action": "Light Attack",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
-                    "id": "1ba66899-c007-4a4c-9d0f-5f4a55e5e2ff",
-                    "path": "<Gamepad>/rightTrigger",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "",
-                    "action": "Heavy Attack",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
-                    "id": "37c1f117-b434-4a4c-92e4-40a40066937c",
-                    "path": "<Mouse>/rightButton",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "",
-                    "action": "Heavy Attack",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
                     "id": "42a15e2d-b950-475d-aa91-32f2fac2902a",
-                    "path": "<Gamepad>/buttonWest",
+                    "path": "<Gamepad>/leftTrigger",
                     "interactions": "",
                     "processors": "",
                     "groups": "",
@@ -375,6 +339,72 @@
                     "processors": "",
                     "groups": "",
                     "action": "Escape",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "da4421e7-871f-4832-b185-291abfb156a5",
+                    "path": "<Gamepad>/rightShoulder",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Light Attack",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "238d1249-7e24-482c-97d4-e0c3cbf79ad5",
+                    "path": "<Mouse>/leftButton",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Light Attack",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "3e694492-5aca-4378-bc8f-bafd4e0fbec7",
+                    "path": "<Gamepad>/leftShoulder",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Gaurd",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "ed6faa25-c968-412e-a4b9-a8a8e90f4c6c",
+                    "path": "<Keyboard>/f",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Gaurd",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "1ba66899-c007-4a4c-9d0f-5f4a55e5e2ff",
+                    "path": "<Gamepad>/rightTrigger",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Heavy Attack",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "37c1f117-b434-4a4c-92e4-40a40066937c",
+                    "path": "<Mouse>/rightButton",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Heavy Attack",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

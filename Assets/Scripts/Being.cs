@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -26,10 +27,21 @@ public abstract class Being : CustomBehavior {
     public void ToggleCrouch() { _crouching = !_crouching; }
     public void StartCrouch() { _crouching = true; }
     public void StopCrouch() { _crouching = false; }
+    public bool IsCrouched() { return _crouching; }
     bool _running;
     public void ToggleRun() { _running = !_running; }
     public void StartRun() { _running = true; }
     public void StopRun() { _running = false; }
+    // Note - we don't use bool here, as we may be trying to run, but failing
+    public bool IsRunning() { return WalkVelocity().magnitude > walkSpeed; }
+
+    void Start() {
+        // Lifecycle hooks for subclasses
+        BeforeStart();
+        AfterStart();
+    }
+    protected virtual void BeforeStart(){}
+    protected virtual void AfterStart(){}
 
     void Update() {
         // This unity built-in method takes no parameters of course,
@@ -91,18 +103,61 @@ public abstract class Being : CustomBehavior {
 
     protected void LightAttack() {
         // TODO 'hitbox', attack sequences, input buffer, etc, etc
-        Debug.Log("light attack");
+        GetWeapon().Light();
     }
     protected void HeavyAttack() {
-        Debug.Log("heavy attack");
+        GetWeapon().Heavy();
     }
     protected void SpecialAttack() {
-        Debug.Log("special attack");
+        GetWeapon().Special();
+    }
+
+    // How much time after the gaurd starts that we are
+    // able to parry the blow
+    float _parryMax = .1f;
+    float _gaurdTime;
+    protected void UpdateGaurd() {
+        if (!_gaurding) _gaurdTime = 0;
+        else {
+            _gaurdTime += Time.deltaTime;
+        }
+    }
+    bool _gaurding;
+    public void ToggleGaurd() { _gaurding = !_gaurding; }
+    public void StartGaurd() { _gaurding = true; }
+    public void StopGaurd() { _gaurding = false; }
+    public bool IsGaurding() { return _gaurding; }
+    public bool CanParry() { return _gaurdTime < _parryMax; }
+
+
+    public Weapon GetWeapon() {
+        // Return what weapon this being is holding,
+        // creating the default weapon if it is not equiped
+        var weap = GetComponentInChildren<Weapon>();
+        if (weap != null) return weap;
+        var weapObject = CreateWeapon();
+        return weapObject.GetComponent<Weapon>();
+    }
+    Type defaultWeaponType = typeof(Fists);
+    GameObject CreateWeapon(Type weaponType) {
+        // Create an empty weapon object that has no
+        // weapon component assigned to it (yet)
+        var weapObject = new GameObject("Weapon - "+weaponType);
+        weapObject.transform.SetParent(transform);
+        weapObject.AddComponent(weaponType);
+        return weapObject;
+    }
+    GameObject CreateWeapon() { return CreateWeapon(defaultWeaponType); }
+    public LimbAnimator GetWeaponLimb(Weapon weapon) { 
+        // Return the limb holding this equiped weapon
+        // TODO for now, just returning an arm
+        return FindContains("Arm R").GetComponent<LimbAnimator>();
     }
 
     public void Jump() {
         // Being wishes to jump
         // TODO should buffer/queue this stuff
+        _prejump = false;
         if (!CanJump()) return;
         _jumpTimer = 0;
         GetComponent<Rigidbody>().AddForce(transform.up * jumpForce); 
@@ -136,10 +191,7 @@ public abstract class Being : CustomBehavior {
         // and handle duplicate jumps, coyote jumps, etc
 
         // Whenever we walk on the ground, we get coyote back
-        if (InAir()) {
-            _coyoteTimer += Time.deltaTime;
-            _prejump = false;
-        }
+        if (InAir()) { _coyoteTimer += Time.deltaTime; }
         else _coyoteTimer = 0;
         // For now, jump recharges in air and on ground
         _jumpTimer += Time.deltaTime;
@@ -156,8 +208,8 @@ public abstract class Being : CustomBehavior {
     protected void UpdateCrouch() {
         // Handle crouching, squatting before jump, etc
         var collider = transform.Find("Walk Collider");
-        if (_crouching) collider.localScale = new Vector3(1, .65f, 1);
-        else if (_prejump) collider.localScale = new Vector3(1, .55f, 1);
+        if (_prejump) collider.localScale = new Vector3(1, .55f, 1);
+        else if (_crouching) collider.localScale = new Vector3(1, .65f, 1);
         else collider.localScale= new Vector3(1, 1, 1);
     }
 
@@ -185,10 +237,8 @@ public abstract class Being : CustomBehavior {
     // The % of the controllers max speed they are moving
     public float Rush() { return WalkVelocity().magnitude / runSpeed; }
     public float ForwardRush() { return ForwardVelocity() / runSpeed; }
-    // TODO should we use _running bool here?
     public bool IsWalking() { return WalkVelocity().magnitude > 0.001f; }
-    public bool IsRunning() { return WalkVelocity().magnitude > walkSpeed; }
-    public bool IsCrouched() { return _crouching; }
+    public bool IsAttacking() { return GetWeapon().IsAttacking(); }
 
     Vector3 _prevVelocity;
     public Vector3 AccelerationToDisplacement(Vector3 acceleration) {

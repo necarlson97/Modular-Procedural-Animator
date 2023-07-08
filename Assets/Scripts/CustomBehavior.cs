@@ -17,6 +17,10 @@ public class CustomBehavior : MonoBehaviour {
     public static Quaternion RotForward() { return Q(0, 90, 90); }
     public static Quaternion RotBackward() { return Q(0, -90, 90); }
     public static Quaternion RotUp() { return Q(0, 90, 1); }
+    public static Quaternion RotUp(bool left) { 
+        if (left) return Q(0, -90, 1);
+        else return Q(0, 90, 1);
+    }
     public static Quaternion RotDown() { return Q(0, 90, 180); }
     public static Quaternion RotLeft() { return Q(0, 0, 90); }
     public static Quaternion RotRight() { return Q(0, 0, -90); }

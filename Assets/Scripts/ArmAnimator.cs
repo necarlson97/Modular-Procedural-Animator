@@ -24,7 +24,9 @@ public class ArmAnimator : LimbAnimator {
 
     protected override void AfterStart() {
         // Elbows point 'behind' when starting in T-pose
-        hint.transform.position = GetMidBone().transform.position - transform.forward * GetLength();
+        var hintPos = landmarks.WideWaistPos();
+        hintPos -= transform.forward * .5f * GetDepth();
+        hint.transform.position = hintPos;
         // Correctly attach shoulders before toso has chance to move
         ParentShoulder();
         // For now, swapping to using a springy connection
@@ -39,18 +41,27 @@ public class ArmAnimator : LimbAnimator {
         // Testing / debug
         if (Player.IsDevMode()) return;
         if (testPos != "") {
-            PlaceTarget(GetPos(testPos), true);
+            PlaceTarget(landmarks.Get(testPos), true);
             return;
         }
 
-        if (being.IsRunning()) RunCycle();
+        if (being.IsAttacking()) return;
+        else if (being.IsGaurding()) Gaurd();
+        else if (being.IsRunning()) RunCycle();
         else if (being.IsWalking()) WalkCycle();
         else Rest();
     }
 
     void Rest() {
         // When standing still, bring arms down to sides
-        PlaceTarget(DownPos(IsLeft()), RotDown(), true);
+        PlaceTarget(landmarks.LoweredPos(), RotDown(), true);
+    }
+
+    void Gaurd() {
+        // When gaurding, place hands where weapon gaurd
+        // expects them to be
+        // TODO for now - just keep fists by chin
+        PlaceTarget(landmarks.ChinPos(), RotUp(IsLeft()), true);
     }
 
     void RunCycle() {
@@ -65,8 +76,8 @@ public class ArmAnimator : LimbAnimator {
         // in the arm pump motion
         var legPos = leg.target.transform.localPosition;
 
-        var downPos = HolsterPos(IsLeft());
-        var upPos = BoxerPos(IsLeft());
+        var downPos = landmarks.HolsterPos();
+        var upPos = landmarks.BoxerPos();
 
         // Remap where the foot is to a 0-1 lerpable progress
         var stepRadius = leg.MaxStepLength();
@@ -93,7 +104,7 @@ public class ArmAnimator : LimbAnimator {
 
     void WalkCycle() {
         // For now, just lifting arms a bit
-        PlaceTarget(WaistPos(IsLeft()), RotForward(), true);
+        PlaceTarget(landmarks.WaistPos(), RotForward(), true);
     }
 
     public void LateUpdate() {
