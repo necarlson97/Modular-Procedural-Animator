@@ -50,7 +50,8 @@ public class LegAnimator : LimbAnimator {
         var footPlacement = GetFootPlacement(
             lastPlacement, _targetStartPos, IsOffset());
 
-        PlaceTarget(footPlacement);
+        // Place foot in world position - not local
+        PlaceTarget(footPlacement, false);
         lastPlacement = footPlacement;
     }
 

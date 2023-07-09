@@ -173,10 +173,7 @@ public class LimbAnimator : CustomBehavior {
         // we will assume the root bone for ik
         // is the 1st bone under skeleton
         if (rootBone != null) return rootBone;
-        // TODO for now, assume 'last'
-        // - mostly because 'thigh' later alpha than 'pelvis'
-        var last = skeleton.transform.childCount - 1;
-        rootBone = skeleton.transform.GetChild(last).gameObject;
+        rootBone = ChildOf(skeleton);
         return rootBone;
     }
 
@@ -184,7 +181,7 @@ public class LimbAnimator : CustomBehavior {
         // If the bone is not explicitly set,
         // we will assume it is just after root
         if (midBone != null) return midBone;
-        midBone = GetRootBone().transform.GetChild(0).gameObject;
+        midBone = ChildOf(GetRootBone());
         return midBone;
     }
 
@@ -202,13 +199,21 @@ public class LimbAnimator : CustomBehavior {
         // penultimate child in the root's descendents
         // (Note: you can use the last child,
         //  but that is the bone's tail rather than head)
-
         Transform currentBone = GetRootBone().transform;
         while (currentBone.childCount > 0) {
-            var last = currentBone.childCount - 1;
-            currentBone = currentBone.GetChild(last);
+            currentBone = ChildOf(currentBone).transform;
         }
         return currentBone.parent.gameObject;
+    }
+
+    public GameObject ChildOf(Transform t, bool last=true) {
+        // Helper method to get child of transform (or gameObject)
+        var idx = 0;
+        if (last) idx = t.childCount - 1;
+        return t.GetChild(idx).gameObject;
+    }
+    public GameObject ChildOf(GameObject g, bool last=true) {
+        return ChildOf(g.transform, last);
     }
 
     float _length = -1;
@@ -228,11 +233,13 @@ public class LimbAnimator : CustomBehavior {
         return _targetStartPos - target.transform.localPosition;
     }
 
-    public void PlaceTarget(Vector3 destination, bool local=false) {
+    public void PlaceTarget(Vector3 destination, bool local=true) {
         // Just becasue we will use it often -
         // moving the target more smoothly with lerp
         // TODO the lerp speed will likely be depending on size and
         // 'personality' - like the idea for 'frenzy' or what-have-you
+        // TODO should we just default to using LimbSpring and not
+        // use this?
         var baseSpeed = 30f;
         var progress = baseSpeed * Time.deltaTime;
         if (local) {
@@ -243,26 +250,61 @@ public class LimbAnimator : CustomBehavior {
                 target.transform.position, destination, progress);
         }
     }
-    public void PlaceTarget(Vector3 destination, Quaternion rotation, bool local=false) {
+    public void PlaceTarget(Vector3 destination, Quaternion rotation, bool local=true) {
         var baseRotSpeed = 100f;
+        var progress = baseRotSpeed * Time.deltaTime;
+        PlaceTarget(rotation, local);
+        PlaceTarget(destination, local);
+    }
+    public void PlaceTarget(Vector3 destination, Vector3 lookAt, bool local=true) {
+        TargetLookAt(lookAt);
+        PlaceTarget(destination, local);
+    }
+    public void PlaceTarget(Quaternion rotation, bool local=true) {
+        var baseRotSpeed = 30f;
         var progress = baseRotSpeed * Time.deltaTime;
         if (local) {
             target.transform.localRotation = Quaternion.Slerp(
                 target.transform.localRotation, rotation, progress);
         } else {
-            target.transform.localRotation = Quaternion.Slerp(
-                target.transform.localRotation, rotation, progress);
+            target.transform.rotation = Quaternion.Slerp(
+                target.transform.rotation, rotation, progress);
         }
-        PlaceTarget(destination, local);
     }
-    public void PlaceTarget(Vector3 destination, Vector3 lookAt, bool local=false) {
+    public void TargetLookAt(Vector3 lookAt, bool local=true) {
         Quaternion rot;
-        if (local) {
-            rot = Quaternion.LookRotation(lookAt, Vector3.up);
-        } else {
-            rot = Quaternion.LookRotation(lookAt, transform.up);
-        }
-        PlaceTarget(destination, rot, local);
+        if (local) rot = Quaternion.LookRotation(lookAt, Vector3.up);
+        else rot = Quaternion.LookRotation(lookAt, transform.up);
+        PlaceTarget(rot, local);
+    }
+
+    public void SnapTarget(Vector3 destination, bool local=true) {
+        // Instantly move the IK target - no smooth lerping
+        // TODO maybe rename PlaceTarget to LerpTarget or whatever
+        if (local) target.transform.localPosition = destination;
+        else target.transform.position = destination;
+    }
+    public void SnapTarget(Vector3 destination, Quaternion rotation, bool local=true) {
+        if (local) target.transform.localRotation = rotation;
+        else target.transform.rotation = rotation;
+        SnapTarget(destination, local);
+    }
+    public void SnapTarget(Vector3 destination, Vector3 lookAt, bool local=true) {
+        Quaternion rot;
+        if (local) rot = Quaternion.LookRotation(lookAt, Vector3.up);
+        else rot = Quaternion.LookRotation(lookAt, transform.up);
+        SnapTarget(destination, rot, local);
+    }
+    
+    public Vector3 TargetPos(bool local=true) {
+        // Return the current position of the target
+        if (local) return target.transform.localPosition;
+        return target.transform.position;
+    }
+    public Quaternion TargetRot(bool local=true) {
+        // Return the current rotation of the target
+        if (local) return target.transform.localRotation;
+        return target.transform.rotation;
     }
 
     Vector3 _bounds;

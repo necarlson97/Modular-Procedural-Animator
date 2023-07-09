@@ -19,7 +19,7 @@ public class ArmAnimator : LimbAnimator {
     protected override void BeforeStart() {
         // TODO for now, ignore shoulder, and move bicept
         // TODO is this ok?
-        rootBone = GetRootBone().transform.GetChild(0).gameObject;
+        rootBone = ChildOf(GetRootBone());
     }
 
     protected override void AfterStart() {
@@ -41,10 +41,13 @@ public class ArmAnimator : LimbAnimator {
         // Testing / debug
         if (Player.IsDevMode()) return;
         if (testPos != "") {
-            PlaceTarget(landmarks.Get(testPos), true);
+            PlaceTarget(landmarks.Get(testPos));
             return;
         }
 
+        // TODO we should have a more codified priority system
+        // in the limb animator, for passing up what we think the limb
+        // should be doing, then attack or whatever can override
         if (being.IsAttacking()) return;
         else if (being.IsGaurding()) Gaurd();
         else if (being.IsRunning()) RunCycle();
@@ -54,14 +57,14 @@ public class ArmAnimator : LimbAnimator {
 
     void Rest() {
         // When standing still, bring arms down to sides
-        PlaceTarget(landmarks.LoweredPos(), RotDown(), true);
+        PlaceTarget(landmarks.LoweredPos(), RotDown());
     }
 
     void Gaurd() {
         // When gaurding, place hands where weapon gaurd
         // expects them to be
         // TODO for now - just keep fists by chin
-        PlaceTarget(landmarks.ChinPos(), RotUp(IsLeft()), true);
+        PlaceTarget(landmarks.ChinPos(), RotUp(IsLeft()));
     }
 
     void RunCycle() {
@@ -99,12 +102,12 @@ public class ArmAnimator : LimbAnimator {
         // Simmilarly, lets try lerping our rotation
         var currentRot = Quaternion.Lerp(RotForward(), RotUp(), progress);
         currentRot = Quaternion.Euler(moveEuler) * currentRot;
-        PlaceTarget(currentPos, currentRot, true);
+        PlaceTarget(currentPos, currentRot);
     }
 
     void WalkCycle() {
         // For now, just lifting arms a bit
-        PlaceTarget(landmarks.WaistPos(), RotForward(), true);
+        PlaceTarget(landmarks.WaistPos(), RotForward());
     }
 
     public void LateUpdate() {
@@ -125,7 +128,7 @@ public class ArmAnimator : LimbAnimator {
         // less clean for now
 
         // Shorthand for the bone transforms
-        var shoulder = skeleton.transform.GetChild(0);
+        var shoulder = ChildOf(skeleton).transform;
         var chest = GetTorso().GetChestBone().transform;
 
         // Set offset if 1st time:

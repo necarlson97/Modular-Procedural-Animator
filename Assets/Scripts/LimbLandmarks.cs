@@ -141,7 +141,7 @@ public class LimbLandmarks {
 
         var chest = GetTorso().GetChestBone().transform.position;
         var sideOffset = GetTorso().GetWidth() * .25f * transform.right;
-        var frontOffset = GetTorso().GetDepth() * transform.forward;
+        var frontOffset = GetTorso().GetDepth() * .5f * transform.forward;
         pos = chest + frontOffset;
 
         if (knownLeft) pos -= sideOffset;
@@ -195,8 +195,8 @@ public class LimbLandmarks {
         return pos;
     }
     public Vector3 ExtendedPos(bool? left=null) {
-        // The space over the shoulder,
-        // where someone might raise a weapon
+        // The space directly in front, where someone might
+        // 'end' a punch
         var name = "Extended";
         var knownLeft = IsLeft(left);
         // If we have it memozied, return that
@@ -204,12 +204,8 @@ public class LimbLandmarks {
         if (pos != default(Vector3)) return pos;
 
         var chest = GetTorso().GetChestBone().transform.position;
-        var sideOffset = GetTorso().GetWidth() * 1.1f * transform.right;
-        var frontOffset = GetLength() * transform.forward;
+        var frontOffset = GetLength() * .8f * transform.forward;
         pos = chest + frontOffset;
-
-        if (knownLeft) pos -= sideOffset;
-        else pos += sideOffset;
 
         // Memoize the results
         SetPos(name, pos, knownLeft);

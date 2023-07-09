@@ -150,8 +150,22 @@ public abstract class Being : CustomBehavior {
     GameObject CreateWeapon() { return CreateWeapon(defaultWeaponType); }
     public LimbAnimator GetWeaponLimb(Weapon weapon) { 
         // Return the limb holding this equiped weapon
-        // TODO for now, just returning an arm
+        // TODO for now, just returning major arm
+        return MajorLimb();
+    }
+    public LimbAnimator MajorLimb() { 
+        // Return the 'dominant' limb
+        // TODO for now, just right arm
         return FindContains("Arm R").GetComponent<LimbAnimator>();
+    }
+    public LimbAnimator MinorLimb() {
+        // The limb opposite to the major limb,
+        // e.g. the non-dominant arm
+        // TODO for now, just left arm
+        return FindContains("Arm L").GetComponent<LimbAnimator>();
+    }
+    public TorsoAnimator Torso() {
+        return GetComponentInChildren<TorsoAnimator>();
     }
 
     public void Jump() {
