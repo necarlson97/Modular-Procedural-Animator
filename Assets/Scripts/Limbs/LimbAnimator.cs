@@ -37,6 +37,10 @@ public class LimbAnimator : CustomBehavior {
 
     // Wheter to setup twoBone or chain
     public bool twoBone = true;
+
+    // TODO REMOVE
+    // just for testing
+    public string testPos;
     
     void Start() {
         being = transform.parent.GetComponent<Being>();
@@ -271,10 +275,13 @@ public class LimbAnimator : CustomBehavior {
         }
     }
     public void TargetLookAt(Vector3 lookAt, bool local=true) {
-        Quaternion rot;
-        if (local) rot = Quaternion.LookRotation(lookAt, Vector3.up);
-        else rot = Quaternion.LookRotation(lookAt, transform.up);
+        Quaternion rot = LookRotation(lookAt, local);
         PlaceTarget(rot, local);
+    }
+    public Quaternion LookRotation(Vector3 lookAt, bool local=true) {
+        // Just shorithand for Quaternion.LookRotation
+        if (local) return Quaternion.LookRotation(lookAt, Vector3.up);
+        else return Quaternion.LookRotation(lookAt, transform.up);
     }
 
     public void SnapTarget(Vector3 destination, bool local=true) {

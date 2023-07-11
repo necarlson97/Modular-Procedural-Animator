@@ -155,7 +155,7 @@ public class Face : Landmark {
     protected override Vector3 Calcualte(bool left) {
         var pos = GetTorso().target.transform.position;
         var sideOffset = GetTorso().GetWidth() * .1f * transform.right;
-        var frontOffset = GetTorso().GetDepth() * .5f * transform.forward;
+        var frontOffset = GetTorso().GetDepth() * .4f * transform.forward;
         var vertOffset = GetTorso().GetLength() * -.2f * transform.up;
         pos += frontOffset + vertOffset;
         if (left) return pos - sideOffset;
@@ -194,6 +194,26 @@ public class Lowered : Landmark {
         var pos = GetRootBone().transform.position;
         var vertOffset = GetLength() * .85f * -transform.up;
         pos += vertOffset;
+        return pos;
+    }
+}
+public class LeanBack : Landmark {
+    // Slght lean for torso target
+    public LeanBack(LimbAnimator limb) : base(limb) {}
+    protected override Vector3 Calcualte(bool left) {
+        var pos = GetTorso().GetChestBone().transform.position;
+        var frontOffset = GetTorso().GetDepth() * .1f * -transform.forward;
+        pos += frontOffset;
+        return pos;
+    }
+}
+public class LeanForward : Landmark {
+    // Slght lean for torso target
+    public LeanForward(LimbAnimator limb) : base(limb) {}
+    protected override Vector3 Calcualte(bool left) {
+        var pos = GetTorso().GetChestBone().transform.position;
+        var frontOffset = GetTorso().GetDepth() * .1f * transform.forward;
+        pos += frontOffset;
         return pos;
     }
 }

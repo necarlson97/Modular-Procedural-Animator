@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -26,6 +27,16 @@ public class CustomBehavior : MonoBehaviour {
     public static Quaternion RotRight() { return Q(0, 0, -90); }
     public static Quaternion Q(float x, float y, float z) {
         return Quaternion.Euler(x, y, z);   
+    }
+    public static Quaternion Rotation(string name) {
+        // Given the string name of a rotation (such as 'Up'),
+        // use reflection to call that method
+        var method = typeof(CustomBehavior).GetMethod("Rot"+name, Type.EmptyTypes);
+        if (method == null) {
+            Debug.LogError("Could not find method for "+name+"Pos");
+            return default(Quaternion);
+        }
+        return (Quaternion) method.Invoke(null, null);
     }
 
     public static GameObject FindContains(string query, Transform t) {

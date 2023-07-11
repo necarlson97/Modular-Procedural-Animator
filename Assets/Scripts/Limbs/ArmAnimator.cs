@@ -12,10 +12,6 @@ public class ArmAnimator : LimbAnimator {
     // - e.g., inheriting 'feindish-idle' code and 'dagger-thrust'
     // from elsewhere
 
-    // TODO REMOVE
-    // just for testing
-    public string testPos;
-
     protected override void BeforeStart() {
         // TODO for now, ignore shoulder, and move bicept
         // TODO is this ok?
@@ -64,7 +60,7 @@ public class ArmAnimator : LimbAnimator {
         // When gaurding, place hands where weapon gaurd
         // expects them to be
         // TODO for now - just keep fists by chin
-        PlaceTarget(landmarks.Get("Chin"), RotUp(IsLeft()));
+        PlaceTarget(landmarks.Get("Face"), RotUp(IsLeft()));
     }
 
     void RunCycle() {

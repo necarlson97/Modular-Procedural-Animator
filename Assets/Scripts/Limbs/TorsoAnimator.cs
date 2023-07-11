@@ -42,14 +42,22 @@ public class TorsoAnimator : LimbAnimator {
     void Update() {
         // Need more codified priority system
         if (Player.IsDevMode()) return;
+        if (testPos != "") {
+            PlaceTarget(landmarks.Get(testPos));
+            return;
+        }
         if (being.IsAttacking()) return;
-        // TODO I think we want to lean with chest,
-        // but keep head focused on lock-on
+        
         LeanTorso();
+        // Keep torso pointed forwards
         TargetLookAt(Vector3.forward);
         // TODO idle breathing?
         
-        // Or what enemy you would target?
+        // TODO I think we want to lean keep head focused
+        // on lock-on pr what enemy you would target,
+        // or what pickups are near, etc
+        UpdateLook();
+        ParentHead();
     }
 
     void UpdateLook() {
@@ -73,7 +81,14 @@ public class TorsoAnimator : LimbAnimator {
         var leanFrom = target.transform.position;
         var leanTo = transform.position + _targetStartPos + leanDirection;
         target.transform.position = Vector3.Lerp(leanFrom, leanTo, Time.deltaTime * 10);
-        head.transform.position = Vector3.Lerp(leanFrom, leanTo, Time.deltaTime * 10);
+    }
+
+    void ParentHead() {
+        // For now, have the head x/z follow the chest
+        // (but do not change height)
+        var pos = Vector3.Lerp(head.transform.position, target.transform.position, Time.deltaTime * 10);
+        pos.y = head.transform.position.y;
+        head.transform.position = pos;
     }
 
     float MaxLean() {

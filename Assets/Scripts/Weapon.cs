@@ -64,8 +64,6 @@ public class Weapon : CustomBehavior {
     void Update() {
         // If we are ready to perform an attack,
         // and have one ready, perform it
-        Debug.Log("Size: "+_attackBuffer._queue.Count);
-        Debug.Log("Peek: "+_attackBuffer.Peek());
         if (!IsEquiped() ||  IsAttacking()) return;
         var attack = _attackBuffer.Pop();
         if (attack != null) StartCoroutine(PerformAttack(attack));
@@ -98,7 +96,8 @@ public class Weapon : CustomBehavior {
         // After the strike, check if there's a buffered attack of the same type,
         // and if it is of the same type, perform the next strike
         var nextAttack = _attackBuffer.Pop();
-        if (nextAttack != null && nextAttack.name == attack.name) {
+        bool sameAttack = nextAttack != null && nextAttack.name == attack.name;
+        if (sameAttack && strikeIndex+1 < attack.strikes.Count) {
             yield return StartCoroutine(PerformAttack(nextAttack, strikeIndex + 1));
         }
         _attacking = false;
@@ -117,19 +116,7 @@ public class Weapon : CustomBehavior {
         while (elapsedTime < strike.prep) {
             elapsedTime += Time.deltaTime;
             float progress = elapsedTime / strike.prep;
-
-            var pos = Vector3.Lerp(priorPos, strike.startPos, progress);
-            var rot = Quaternion.Lerp(priorRot, strike.startRot, progress);
-            Limb().SnapTarget(pos, rot);
-
-            // For now, have other hand just come to gaurd position,
-            // and rotate shoulders - but this will likely have to
-            // be based on attack
-            MinorLimb().PlaceTarget(MinorLimb().landmarks.Get("Chest"), RotUp());
-            Torso().TargetLookAt(Vector3.right);
-
-            // TODO REMOVE
-            Debug.DrawLine(transform.position+priorPos, transform.position+strike.startPos, Color.yellow);
+            strike.Prep(progress, priorPos, priorRot);
             yield return null;
         }
     }
@@ -141,23 +128,12 @@ public class Weapon : CustomBehavior {
         while (elapsedTime < strike.duration) {
             elapsedTime += Time.deltaTime;
             float progress = elapsedTime / strike.duration;
-
-            var pos = Vector3.Lerp(strike.startPos, strike.endPos, progress);
-            var rot = Quaternion.Lerp(strike.startRot, strike.endRot, progress);
-            Limb().SnapTarget(pos, rot);
-            // For now, have other hand move back,
-            // and shoulders rotate forwards
-            MinorLimb().PlaceTarget(MinorLimb().landmarks.Get("Chest"), RotUp());
-            Torso().TargetLookAt(-Vector3.right);
-            // TODO enable/disable hurtbox collider
-            // TODO REMOVE
-            Debug.DrawLine(transform.position+strike.startPos, transform.position+strike.endPos, Color.red);
-            Debug.DrawLine(pos, Limb().TargetPos(), Color.blue);
+            strike.Perform(progress);
             yield return null;
         }
         
         // For now, leaving a little after-strike delay
-        Limb().SnapTarget(strike.endPos, strike.endRot);
+        strike.Perform(1);
         yield return new WaitForSeconds(strike.prep * .6f);
     }
 

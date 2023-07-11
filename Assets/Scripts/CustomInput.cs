@@ -15,8 +15,8 @@ public static class CustomInput {
         "Run", "Jump", "Crouch",
         "Target Lock", "Gaurd",
         "Light Attack", "Heavy Attack", "Special Attack",
-        "Dev Key",
-        "Mouse Click", "Escape"
+        "Mouse Click", "Escape",
+        "Dev Key", "Inc Time", "Dec Time"
     };
 
     private static void Setup() {

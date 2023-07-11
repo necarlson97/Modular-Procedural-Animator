@@ -86,14 +86,6 @@
                     "interactions": ""
                 },
                 {
-                    "name": "Dev Key",
-                    "type": "Button",
-                    "id": "c2c0d028-5794-471c-91fd-96fcc0c72789",
-                    "expectedControlType": "Button",
-                    "processors": "",
-                    "interactions": ""
-                },
-                {
                     "name": "Mouse Click",
                     "type": "Button",
                     "id": "e041a90b-4d77-44d5-8fb8-9ae406ed8c65",
@@ -105,6 +97,30 @@
                     "name": "Escape",
                     "type": "Button",
                     "id": "702d050a-2ad1-4276-8686-ba2506511fc6",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": ""
+                },
+                {
+                    "name": "Dev Key",
+                    "type": "Button",
+                    "id": "c2c0d028-5794-471c-91fd-96fcc0c72789",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": ""
+                },
+                {
+                    "name": "Inc Time",
+                    "type": "Button",
+                    "id": "9c5ca41b-633b-4d86-94b2-6568bd3c41f6",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": ""
+                },
+                {
+                    "name": "Dec Time",
+                    "type": "Button",
+                    "id": "c3f7172b-6a83-4b84-a4d7-860e4fa69723",
                     "expectedControlType": "Button",
                     "processors": "",
                     "interactions": ""
@@ -218,17 +234,6 @@
                     "processors": "",
                     "groups": "",
                     "action": "Jump",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
-                    "id": "5cf0531a-7257-4e83-acd8-a2ec8b5ee73a",
-                    "path": "<Keyboard>/backquote",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "",
-                    "action": "Dev Key",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },
@@ -405,6 +410,39 @@
                     "processors": "",
                     "groups": "",
                     "action": "Heavy Attack",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "ac7b8736-92da-4ee1-93d2-b08de660bfdf",
+                    "path": "<Keyboard>/rightBracket",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Inc Time",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "cf577767-7dc7-47a3-bbf9-ce8099d27422",
+                    "path": "<Keyboard>/leftBracket",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Dec Time",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "5cf0531a-7257-4e83-acd8-a2ec8b5ee73a",
+                    "path": "<Keyboard>/backquote",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Dev Key",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }
