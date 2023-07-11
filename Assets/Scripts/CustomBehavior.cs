@@ -40,9 +40,42 @@ public class CustomBehavior : MonoBehaviour {
         }
         return null;
     }
-
     public GameObject FindContains(string query) {
         return FindContains(query, transform);
+    }
+
+    protected GameObject CreateEmpty(string emptyName) {
+        // Helper for creating an empty child
+        // (For IK targets, IK hints, etc)
+        var go = new GameObject(emptyName);
+        go.transform.SetParent(transform);
+        return go;
+    }
+    protected GameObject CreateEmpty(string emptyName, Vector3 pos) {
+        // Use Vector3 to set starting point
+        var go = CreateEmpty(emptyName);
+        go.transform.position = pos;
+        return go;
+    }
+    protected GameObject CreateEmpty(string emptyName, Vector3 pos, Quaternion rot) {
+        // Use Vector3 to set starting point
+        var go = CreateEmpty(emptyName, pos);
+        go.transform.rotation = rot;
+        return go;
+    }
+    protected GameObject CreateEmpty(string emptyName, Vector3 pos, Vector3 lookAt) {
+        // Use Vector3 to set starting point
+        var go = CreateEmpty(emptyName, pos);
+        go.transform.rotation = Quaternion.LookRotation(lookAt, Vector3.up);
+        return go;
+    }
+    protected GameObject CreateEmpty(string emptyName, Transform t) {
+        // Use transform position and rotation to set starting point
+        return CreateEmpty(emptyName, t.position, t.rotation);
+    }
+    protected GameObject CreateEmpty(string emptyName, GameObject go) {
+        // Use a gameObject's position to set starting point
+        return CreateEmpty(emptyName, go.transform.position);
     }
 
     public static float Remap(float value, float inStart, float inEnd, float outStart, float outEnd) {

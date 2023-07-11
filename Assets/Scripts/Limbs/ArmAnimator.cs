@@ -24,7 +24,7 @@ public class ArmAnimator : LimbAnimator {
 
     protected override void AfterStart() {
         // Elbows point 'behind' when starting in T-pose
-        var hintPos = landmarks.WideWaistPos();
+        var hintPos = landmarks.Get("WideWaist");
         hintPos -= transform.forward * .5f * GetDepth();
         hint.transform.position = hintPos;
         // Correctly attach shoulders before toso has chance to move
@@ -57,14 +57,14 @@ public class ArmAnimator : LimbAnimator {
 
     void Rest() {
         // When standing still, bring arms down to sides
-        PlaceTarget(landmarks.LoweredPos(), RotDown());
+        PlaceTarget(landmarks.Get("Lowered"), RotDown());
     }
 
     void Gaurd() {
         // When gaurding, place hands where weapon gaurd
         // expects them to be
         // TODO for now - just keep fists by chin
-        PlaceTarget(landmarks.ChinPos(), RotUp(IsLeft()));
+        PlaceTarget(landmarks.Get("Chin"), RotUp(IsLeft()));
     }
 
     void RunCycle() {
@@ -79,8 +79,8 @@ public class ArmAnimator : LimbAnimator {
         // in the arm pump motion
         var legPos = leg.target.transform.localPosition;
 
-        var downPos = landmarks.HolsterPos();
-        var upPos = landmarks.BoxerPos();
+        var downPos = landmarks.Get("Holster");
+        var upPos = landmarks.Get("Chest");
 
         // Remap where the foot is to a 0-1 lerpable progress
         var stepRadius = leg.MaxStepLength();
@@ -107,7 +107,7 @@ public class ArmAnimator : LimbAnimator {
 
     void WalkCycle() {
         // For now, just lifting arms a bit
-        PlaceTarget(landmarks.WaistPos(), RotForward());
+        PlaceTarget(landmarks.Get("Waist"), RotForward());
     }
 
     public void LateUpdate() {

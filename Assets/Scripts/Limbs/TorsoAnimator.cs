@@ -22,9 +22,7 @@ public class TorsoAnimator : LimbAnimator {
         var shoulderBone = GetTipBone().transform;
         var headBone = GetLastBone().transform.parent;
 
-        head = new GameObject("Target Head");
-        head.transform.SetParent(transform);
-        head.transform.position = headBone.position;
+        head = CreateEmpty("Target Head", headBone);
         
         headIK.data.root = shoulderBone;
         headIK.data.tip = headBone;
@@ -50,9 +48,13 @@ public class TorsoAnimator : LimbAnimator {
         LeanTorso();
         TargetLookAt(Vector3.forward);
         // TODO idle breathing?
+        
+        // Or what enemy you would target?
+    }
+
+    void UpdateLook() {
         // TODO look at something nearby?
         // What you could pick up?
-        // Or what enemy you would target?
     }
 
     void LeanTorso() {

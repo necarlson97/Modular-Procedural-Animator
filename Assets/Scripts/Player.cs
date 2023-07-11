@@ -7,6 +7,10 @@ using System.Linq;
 public class Player : Being {
 
     protected override void AfterStart() {
+        BindInput();
+    }
+
+    void BindInput() {
         // Intilize callbacks from our player input
         CustomInput.GetAction("Crouch").canceled += (
             ctx => { ToggleCrouch(); }
@@ -73,6 +77,24 @@ public class Player : Being {
         }
 
         SetDev();
+    }
+
+    public bool Pickup(Pickup pickup) {
+        // Player picking up this item/weapon/etc
+        // Return 'false' if it is not possible
+        // TODO perhaps a Being method?
+
+        var weap = pickup.transform.parent.GetComponent<Weapon>();
+        if (weap != null) {
+            // For now, just drop any weapon that is held
+            GetWeapon().Drop();
+            weap.Equip(this);
+            weap.transform.parent = transform;
+            return true;
+        } else {
+            Debug.Log("Don't know how to pickup "+pickup.transform.parent.name);
+            return false;
+        }
     }
 
     // Togglable dev mode, and allow

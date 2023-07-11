@@ -140,11 +140,12 @@ public abstract class Being : CustomBehavior {
     }
     Type defaultWeaponType = typeof(Fists);
     GameObject CreateWeapon(Type weaponType) {
-        // Create an empty weapon object that has no
-        // weapon component assigned to it (yet)
+        // Create an empty weapon object,
+        // and equpt it (useful for default weapons)
         var weapObject = new GameObject("Weapon - "+weaponType);
         weapObject.transform.SetParent(transform);
-        weapObject.AddComponent(weaponType);
+        var weap = (Weapon) weapObject.AddComponent(weaponType);
+        weap.Equip(this);
         return weapObject;
     }
     GameObject CreateWeapon() { return CreateWeapon(defaultWeaponType); }

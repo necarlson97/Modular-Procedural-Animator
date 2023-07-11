@@ -40,8 +40,8 @@ public class LimbAnimator : CustomBehavior {
     
     void Start() {
         being = transform.parent.GetComponent<Being>();
-        target = FindContains("Target");
         skeleton = FindContains("Skeleton");
+        target = CreateEmpty("Target", GetTipBone());
 
         // Establish bounds before we setup any IK
         GetBounds();
@@ -101,7 +101,7 @@ public class LimbAnimator : CustomBehavior {
         if (ik == null)  {
             ik = skeleton.AddComponent<ChainIKConstraint>();
         }
-        
+
         ik.data.root = GetRootBone().transform;
         ik.data.tip = GetTipBone().transform;
         ik.data.target = target.transform;
@@ -122,16 +122,15 @@ public class LimbAnimator : CustomBehavior {
         // where everything before/after is basically rigid
         // (which may be more useful for some limbs
         // - and more perfomant)
-         var ik = skeleton.GetComponent<TwoBoneIKConstraint>();
+        var ik = skeleton.GetComponent<TwoBoneIKConstraint>();
         if (ik == null) {
             ik = skeleton.AddComponent<TwoBoneIKConstraint>();
         }
         // For now, just create a hint empty right infront of the limb,
         // - then we can worry about changing it in a subscript
-        hint = new GameObject("Hint");
-        hint.transform.SetParent(transform);
         var hintOffset = transform.forward * 0.2f * GetLength();
-        hint.transform.position = GetMidBone().transform.position + hintOffset;
+        var hintPos = GetMidBone().transform.position + hintOffset;
+        hint = CreateEmpty("Hint", hintPos);
 
         // Setting IK information
         ik.data.target = target.transform;

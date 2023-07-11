@@ -20,55 +20,66 @@ public class Weapon : CustomBehavior {
     public Attack heavyAttack;
     public Attack specialAttack;
 
-    internal Being being;
+    // TODO should attack buffer be on Being?
+    public AttackBuffer _attackBuffer;
+
     public void Start() {
         BeforeStart();
-        being = GetComponentInParent<Being>();
-        lightAttack = new Attack(this, "light");
-        heavyAttack = new Attack(this, "heavy");
-        specialAttack = new Attack(this, "special");
+        _attackBuffer = new AttackBuffer();
         AfterStart();
     }
     protected virtual void BeforeStart(){}
     protected virtual void AfterStart(){}
 
-    public LimbAnimator Limb() {
-        return MajorLimb();
-    }
-
-    public LimbAnimator MajorLimb() {
-        // The dominant hand - for now, right
-        // TODO could memoize
-        // TODO I can see a way to make this work
-        // with legs as well
-        // - but for now, ignoring kicks lol
-        return being.MajorLimb();
-    }
-
-    public LimbAnimator MinorLimb() {
-        // TODO could rename major / minor, etc
-        // TODO could memoize
-        return being.MinorLimb();
-    }
-
-    public TorsoAnimator Torso() {
-        return being.Torso();
-    }
-
-    public virtual void Light() {
-        StartCoroutine(PerformAttack(lightAttack));
-    }
-
-    public virtual void Heavy() {
-        StartCoroutine(PerformAttack(heavyAttack));
-    }
-
-    public virtual void Special() {
-        StartCoroutine(PerformAttack(specialAttack));
-    }
-
+    internal Being _being;
+    public Being Being() { return _being; }
     bool _attacking;
     public bool IsAttacking() { return _attacking; }
+
+    public void Equip(Being being) {
+        // This weapon is currently being held,
+        // initlizie it's attacks
+        // TODO NOT CORRECT - need to make the
+        // attacks easily overridable by the subclasse
+        _being = being;
+        lightAttack = new Attack(this, "light");
+        heavyAttack = new Attack(this, "heavy");
+        specialAttack = new Attack(this, "special");
+    }
+    public void Drop() {
+        // Drop this weapon on the ground
+        // (or destroy it, if it cannot be dropped,
+        // like 'fists')
+        Interrupt();
+        _being = null;
+        var pickup = GetComponentInChildren<Pickup>();
+        if (pickup == null) {
+            Destroy(gameObject);
+            return;
+        }
+        pickup.Drop();
+    }
+    public bool IsEquiped() { return _being != null; }
+
+    void Update() {
+        // If we are ready to perform an attack,
+        // and have one ready, perform it
+        Debug.Log("Size: "+_attackBuffer._queue.Count);
+        Debug.Log("Peek: "+_attackBuffer.Peek());
+        if (!IsEquiped() ||  IsAttacking()) return;
+        var attack = _attackBuffer.Pop();
+        if (attack != null) StartCoroutine(PerformAttack(attack));
+    }
+    
+    public virtual void Light() {
+        _attackBuffer.Add(lightAttack);
+    }
+    public virtual void Heavy() {
+        _attackBuffer.Add(heavyAttack);
+    }
+    public virtual void Special() {
+        _attackBuffer.Add(specialAttack);
+    }
 
     private IEnumerator PerformAttack(Attack attack, int strikeIndex=0) {
         // Perform an attack, starting with the 1st strike,
@@ -84,14 +95,12 @@ public class Weapon : CustomBehavior {
         // Swiftly lash the weapon out to perform the strike (faster)
         yield return StartCoroutine(PerformStrike(strike));
 
-        // After the strike, check if there's a buffered attack of the same type
-        // and if it's still within the window of opportunity
-        // if (_attackBuffer.TryGetAttack(attack, out Attack bufferedAttack)) {
-        //     yield return StartCoroutine(PerformAttack(bufferedAttack, strikeIndex + 1));
-        // } else {
-        //     _attacking = false;
-        // }
-
+        // After the strike, check if there's a buffered attack of the same type,
+        // and if it is of the same type, perform the next strike
+        var nextAttack = _attackBuffer.Pop();
+        if (nextAttack != null && nextAttack.name == attack.name) {
+            yield return StartCoroutine(PerformAttack(nextAttack, strikeIndex + 1));
+        }
         _attacking = false;
 
         yield return new WaitForSeconds(attack.comboDelay);
@@ -116,7 +125,7 @@ public class Weapon : CustomBehavior {
             // For now, have other hand just come to gaurd position,
             // and rotate shoulders - but this will likely have to
             // be based on attack
-            MinorLimb().PlaceTarget(MinorLimb().landmarks.BoxerPos(), RotUp());
+            MinorLimb().PlaceTarget(MinorLimb().landmarks.Get("Chest"), RotUp());
             Torso().TargetLookAt(Vector3.right);
 
             // TODO REMOVE
@@ -138,7 +147,7 @@ public class Weapon : CustomBehavior {
             Limb().SnapTarget(pos, rot);
             // For now, have other hand move back,
             // and shoulders rotate forwards
-            MinorLimb().PlaceTarget(MinorLimb().landmarks.BoxerPos(), RotUp());
+            MinorLimb().PlaceTarget(MinorLimb().landmarks.Get("Chest"), RotUp());
             Torso().TargetLookAt(-Vector3.right);
             // TODO enable/disable hurtbox collider
             // TODO REMOVE
@@ -152,7 +161,6 @@ public class Weapon : CustomBehavior {
         yield return new WaitForSeconds(strike.prep * .6f);
     }
 
-
     public void Interrupt() {
         // Cancel any ongoing attack
         if (_attacking) {
@@ -162,39 +170,24 @@ public class Weapon : CustomBehavior {
             // Possibly return weapon to idle position, disable hurtbox, etc. here
         }
     }
-}
 
-public class AttackBuffer {
-    // Buffer attacks, so as 
-    // TODO I think this will need to be expanded
-    // to a general input buffer, perhaps
-    // made a part of CustomInput - but leaving for now
-
-    // TODO what exactly is thuis?
-    private const float bufferTime = 0.5f;
-
-    private float _lastBufferTime = -bufferTime;
-    // TODO do we want this as a list?
-    private Attack _bufferedAttack;
-
-    public void BufferAttack(Attack attack) {
-        _bufferedAttack = attack;
-        _lastBufferTime = Time.time;
+    public LimbAnimator Limb() {
+        return MajorLimb();
     }
-
-    public bool TryGetAttack(Attack type, out Attack attack) {
-        if (_bufferedAttack != null && _bufferedAttack == type && Time.time - _lastBufferTime <= bufferTime) {
-            attack = _bufferedAttack;
-            Clear();
-            return true;
-        } else {
-            attack = null;
-            return false;
-        }
+    public LimbAnimator MajorLimb() {
+        // The dominant hand - for now, right
+        // TODO could memoize
+        // TODO I can see a way to make this work
+        // with legs as well
+        // - but for now, ignoring kicks lol
+        return Being().MajorLimb();
     }
-
-    public void Clear() {
-        _bufferedAttack = null;
-        _lastBufferTime = -bufferTime;
+    public LimbAnimator MinorLimb() {
+        // TODO could rename major / minor, etc
+        // TODO could memoize
+        return Being().MinorLimb();
+    }
+    public TorsoAnimator Torso() {
+        return Being().Torso();
     }
 }
