@@ -108,7 +108,7 @@ public class Holster : Landmark {
     public Holster(LimbAnimator limb) : base(limb) {}
     protected override Vector3 Calcualte(bool left) {
         var pos = GetTorso().GetRootBone().transform.position;
-        var sideOffset = GetTorso().GetWidth() * .6f * transform.right;
+        var sideOffset = GetTorso().GetWidth() * .5f * transform.right;
         if (left) return pos - sideOffset;
         else return pos + sideOffset;
     }
@@ -155,9 +155,9 @@ public class Face : Landmark {
     protected override Vector3 Calcualte(bool left) {
         var pos = GetTorso().target.transform.position;
         var sideOffset = GetTorso().GetWidth() * .1f * transform.right;
-        var frontOffset = GetTorso().GetDepth() * .4f * transform.forward;
-        var vertOffset = GetTorso().GetLength() * -.2f * transform.up;
-        pos += frontOffset + vertOffset;
+        var frontOffset = GetTorso().GetDepth() * .5f * transform.forward;
+        // var vertOffset = GetTorso().GetLength() * -.2f * transform.up;
+        pos += frontOffset;
         if (left) return pos - sideOffset;
         else return pos + sideOffset;
     }

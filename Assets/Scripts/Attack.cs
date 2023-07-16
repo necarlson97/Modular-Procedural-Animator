@@ -46,6 +46,7 @@ public class StrikeTarget {
         // Can also create with the limb and given names,
         // using the landmark system and the CustomBehavior
         // handy rotations method
+        Debug.Log(landmarkName+" strike target: "+limb);
         this.pos = limb.landmarks.Get(landmarkName);
         this.rot = CustomBehavior.Rotation(rotName);
     }
@@ -154,11 +155,13 @@ public class FistJab : Strike {
     protected override void Setup() {
         majorStart = new StrikeTarget(MajorLimb(), "Face", "Up");
         minorStart = new StrikeTarget(MinorLimb(), "Chest", "Up");
-        torsoStart = new StrikeTarget(Torso(), "LeanBack", Vector3.right);
+        var backRight = (Vector3.right + Vector3.forward).normalized;
+        torsoStart = new StrikeTarget(Torso(), "LeanBack", backRight);
 
         majorEnd = new StrikeTarget(MajorLimb(), "Extended", "Forward");
         minorEnd = new StrikeTarget(MinorLimb(), "Face", "Forward");
-        torsoEnd = new StrikeTarget(Torso(), "LeanForward", -Vector3.right);
+        var backLeft = (-Vector3.right + Vector3.forward).normalized;
+        torsoEnd = new StrikeTarget(Torso(), "LeanForward", backLeft);
     }
 }
 public class FistCross : Strike {
@@ -166,10 +169,12 @@ public class FistCross : Strike {
     protected override void Setup() {
         majorStart = new StrikeTarget(MajorLimb(), "Raised", "Forward");
         minorStart = new StrikeTarget(MinorLimb(), "Chest", "Up");
-        torsoStart = new StrikeTarget(Torso(), "LeanBack", Vector3.right);
+        var backRight = Vector3.right + -Vector3.forward;
+        torsoStart = new StrikeTarget(Torso(), "LeanBack", backRight);
 
         majorEnd = new StrikeTarget(MajorLimb(), "Extended", "Forward");
         minorEnd = new StrikeTarget(MinorLimb(), "Face", "Up");
-        torsoEnd = new StrikeTarget(Torso(), "LeanForward", -Vector3.right);
+        var backLeft = -Vector3.right + -Vector3.forward;
+        torsoEnd = new StrikeTarget(Torso(), "LeanForward", backLeft);
     }
 }

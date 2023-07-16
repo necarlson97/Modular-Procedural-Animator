@@ -12,12 +12,6 @@ public class ArmAnimator : LimbAnimator {
     // - e.g., inheriting 'feindish-idle' code and 'dagger-thrust'
     // from elsewhere
 
-    protected override void BeforeStart() {
-        // TODO for now, ignore shoulder, and move bicept
-        // TODO is this ok?
-        rootBone = ChildOf(GetRootBone());
-    }
-
     protected override void AfterStart() {
         // Elbows point 'behind' when starting in T-pose
         var hintPos = landmarks.Get("WideWaist");
@@ -35,6 +29,7 @@ public class ArmAnimator : LimbAnimator {
         // (have to figure how to make this easily extensible still)
 
         // Testing / debug
+        // TODO could move to limb
         if (Player.IsDevMode()) return;
         if (testPos != "") {
             PlaceTarget(landmarks.Get(testPos));
@@ -54,6 +49,8 @@ public class ArmAnimator : LimbAnimator {
     void Rest() {
         // When standing still, bring arms down to sides
         PlaceTarget(landmarks.Get("Lowered"), RotDown());
+        Debug.Log(name+" Length: "+GetLength().ToString("F4"));
+        Debug.Log(name+"  Lower: "+landmarks.Get("Lowered").ToString("F4"));
     }
 
     void Gaurd() {
@@ -124,7 +121,7 @@ public class ArmAnimator : LimbAnimator {
         // less clean for now
 
         // Shorthand for the bone transforms
-        var shoulder = ChildOf(skeleton).transform;
+        var shoulder = GetRootBone().transform;
         var chest = GetTorso().GetChestBone().transform;
 
         // Set offset if 1st time:

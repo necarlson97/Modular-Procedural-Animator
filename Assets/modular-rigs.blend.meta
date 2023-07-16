@@ -9,6 +9,12 @@ ModelImporter:
   - first:
       74: -4977577306329208148
     second: Character Workshop
+  - first:
+      74: 4058881004746230106
+    second: Burned
+  - first:
+      74: -6650577966226776012
+    second: Test Human
   externalObjects: {}
   materials:
     materialImportMode: 2

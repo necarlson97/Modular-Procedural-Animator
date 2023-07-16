@@ -1,2 +1,14 @@
 Todo:
 - scale mouse sensitivity
+
+
+Export from blender (todo move to somewhere better):
+* Apply all rotations / scale
+* Put them as children of an empty, rotate that parent -90, apply
+* Rotate them back to normal by rotating parent 90
+* Export as FBX (ctrl+shft+x)
+* check selected objects
+* Apply Scallings: FBX Unit Scale
+* -Z forward
+* Y up
+* Apply unit, Use Space - but do not apply transform (more testing needed)

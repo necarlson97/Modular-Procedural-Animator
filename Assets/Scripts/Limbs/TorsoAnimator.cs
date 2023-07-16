@@ -7,7 +7,7 @@ public class TorsoAnimator : LimbAnimator {
 
     // Ratio of the total torso length that
     // they will lean forward when running
-    float maxLeanRatio = 0.3f;
+    float maxLeanRatio = 0.5f;
 
     // IK target for placing the head
     GameObject head;
@@ -20,9 +20,9 @@ public class TorsoAnimator : LimbAnimator {
         // Setup a second IK for the head
         var headIK = skeleton.AddComponent<ChainIKConstraint>();
         var shoulderBone = GetTipBone().transform;
-        var headBone = GetLastBone().transform.parent;
+        var headBone = GetLastBone().transform;
 
-        head = CreateEmpty("Target Head", headBone);
+        head = CreateEmpty("Target Head", ChildOf(headBone));
         
         headIK.data.root = shoulderBone;
         headIK.data.tip = headBone;

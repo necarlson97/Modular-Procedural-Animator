@@ -13,9 +13,23 @@ public class LegAnimator : LimbAnimator {
     protected float stepLengthRatio = .4f;
     protected float stepHeightRatio = .3f;
 
+    protected override void AfterStart() {
+        // TODO not sure if this is the cleanest way
+        // - method on parent?
+        _targetStartRot = RotFlatForward();
+        target.transform.localRotation = _targetStartRot;
+    }
+
     public void Update() {
+        // Testing / debug
+        // TODO could move to limb
+        if (Player.IsDevMode()) return;
+        if (testPos != "") {
+            PlaceTarget(landmarks.Get(testPos));
+            return;
+        }
+
         PlaceFoot();
-        PlaceHips();
     }
 
     LegAnimator _partner;
@@ -53,21 +67,6 @@ public class LegAnimator : LimbAnimator {
         // Place foot in world position - not local
         PlaceTarget(footPlacement, false);
         lastPlacement = footPlacement;
-    }
-
-    public void PlaceHips() {
-        // Bounce hips along with lifting either foot
-        // TODO actually, torso should handle this, yes?
-        var footHeight = TargetOffset().z;
-        var partnerHeight = 0f;
-        if (GetPartner() != null) {
-            partnerHeight = GetPartner().TargetOffset().z;
-        }
-
-        var bounceHeight = Mathf.Max(footHeight, partnerHeight) * (MaxStepHeight() * 1f);
-        var bounceOffset = transform.forward * bounceHeight;
-        // TOOD not sure if I like setting our pos vs setting root bone...
-        GetRootBone().transform.localPosition = _rootStartPos + bounceOffset;
     }
 
     float degrees;
@@ -196,20 +195,25 @@ public class LegAnimator : LimbAnimator {
         // stay there until target is above ground again
 
         // Cast from center of character
-        // TOOD layermask
         var root = GetRootBone().transform.position;
         var footDirection = landingPos-root;
+        var distance = GetLength() * 1.5f;
 
         // If we are at rest, we actually want to check below the foot,
         // 'in-line' with our normal resting point
         if (!being.IsWalking()) {
             footDirection = transform.position + startingPos - root;
-            footDirection *= 1.5f;
+            footDirection *= distance;
         }
 
+        // Only register hits on ground
+        // TODO could make this smarter for
+        // walking over ragdolls, etc
+        // Also - I fuggen hate layer mask syntax.
+        LayerMask groundLayer = 1 << LayerMask.NameToLayer("Ground");
         Ray ray = new Ray(root, footDirection);
         RaycastHit hit;
-        Physics.Raycast(ray, out hit, footDirection.magnitude);
+        Physics.Raycast(ray, out hit, (float) footDirection.magnitude, groundLayer);
         return hit;
     }
 

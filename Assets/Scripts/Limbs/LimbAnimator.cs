@@ -44,7 +44,10 @@ public class LimbAnimator : CustomBehavior {
     
     void Start() {
         being = transform.parent.GetComponent<Being>();
-        skeleton = FindContains("Skeleton");
+        skeleton = GetSkeleton();
+        // TODO for now we don't actually memoize the mesh gameobject,
+        // but we need to ensure it is a child of mine
+        GetMesh();
         target = CreateEmpty("Target", GetTipBone());
 
         // Establish bounds before we setup any IK
@@ -64,6 +67,47 @@ public class LimbAnimator : CustomBehavior {
     protected virtual void BeforeStart(){}
     protected virtual void AfterStart(){}
 
+    protected GameObject GetSkeleton() {
+        // Return this limb's skeleton, which may either be a child
+        // placed in the editor, or inside of a sibling prefab
+        // (the exire FBX exported from blender.)
+        var skele = FindContains("Skeleton");
+        if (skele != null) return skele;
+
+        // For every sibling, search their children for skeletons
+        // If there is a skeleton that contains this limbs name,
+        // it is likey mine
+        var allSkeletons = FindAllContains("Skeleton", transform.parent);
+        foreach (GameObject s in allSkeletons) {
+            if (s.name.Contains(name)) {
+                s.transform.parent = transform;
+                return s;
+            }
+        }
+        Debug.LogError("Did not find skeleton for: "+name);
+        return null;
+    }
+
+    protected GameObject GetMesh() {
+        // Return this limb's mesh, which may either be a child
+        // placed in the editor, or inside of a sibling prefab
+        // (the exire FBX exported from blender)
+        var mesh = FindContains("Mesh");
+        if (mesh != null) return mesh;
+
+        // For every sibling, search their children.
+        // If a child contains this limbs name,
+        // it is likey mine
+        var allMeshes = FindAllContains("Mesh", transform.parent);
+        foreach (GameObject m in allMeshes) {
+            if (m.name.Contains(name)) {
+                m.transform.parent = transform;
+                return m;
+            }
+        }
+        Debug.LogError("Did not find mesh for: "+name);
+        return null;
+    }
 
     void SetupRig() {
         // Create the objects / components needed for IK
@@ -233,7 +277,7 @@ public class LimbAnimator : CustomBehavior {
     }
 
     public Vector3 TargetOffset() {
-        return _targetStartPos - target.transform.localPosition;
+        return target.transform.localPosition - _targetStartPos;
     }
 
     public void PlaceTarget(Vector3 destination, bool local=true) {
@@ -335,7 +379,7 @@ public class LimbAnimator : CustomBehavior {
         // TODO maybe refactor to have a stronger idea of
         // 'neither' - in which case make it limb method
         if (_isLeft != null) return (bool) _isLeft;
-        _isLeft = GetRootBone().transform.localPosition.x > 0;
+        _isLeft = GetRootBone().transform.localPosition.x < 0;
         return (bool) _isLeft;
     }
 

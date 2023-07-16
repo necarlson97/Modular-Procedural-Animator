@@ -16,6 +16,7 @@ public class CustomBehavior : MonoBehaviour {
     // Note: some might be 1 or so degrees 'off'
     // to encourage lerp to 'choose a desired direction'
     public static Quaternion RotForward() { return Q(0, 90, 90); }
+    public static Quaternion RotFlatForward() { return Q(90, 0, 0); }
     public static Quaternion RotBackward() { return Q(0, -90, 90); }
     public static Quaternion RotUp() { return Q(0, 90, 1); }
     public static Quaternion RotUp(bool left) { 
@@ -53,6 +54,22 @@ public class CustomBehavior : MonoBehaviour {
     }
     public GameObject FindContains(string query) {
         return FindContains(query, transform);
+    }
+
+    public static List<GameObject> FindAllContains(string query, Transform t) {
+        // Find all child gameobjects whose name contains a string
+        // (recursive)
+        var contains = new List<GameObject>();
+        if (t.name.Contains(query)){
+            contains.Add(t.gameObject);
+        }
+        foreach (Transform child in t){
+            contains.AddRange(FindAllContains(query, child));
+        }
+        return contains;
+    }
+    public List<GameObject> FindAllContains(string query) {
+        return FindAllContains(query, transform);
     }
 
     protected GameObject CreateEmpty(string emptyName) {
