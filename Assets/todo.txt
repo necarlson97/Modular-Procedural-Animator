@@ -3,11 +3,13 @@ Todo:
 
 
 Export from blender (todo move to somewhere better):
+
 * Apply all rotations / scale
 * Put them as children of an empty, rotate that parent -90, apply
 * Rotate them back to normal by rotating parent 90
 * Export as FBX (ctrl+shft+x)
-* check selected objects
+* F:\unity\Modular Procedural Animator\Assets\Models\Beings\
+* check: Selected Objects
 * Apply Scallings: FBX Unit Scale
 * -Z forward
 * Y up

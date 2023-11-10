@@ -15,6 +15,9 @@ ModelImporter:
   - first:
       74: -6650577966226776012
     second: Test Human
+  - first:
+      74: 513793263631888663
+    second: Goblin
   externalObjects: {}
   materials:
     materialImportMode: 2
