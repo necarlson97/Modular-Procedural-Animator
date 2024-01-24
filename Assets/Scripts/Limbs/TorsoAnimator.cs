@@ -49,6 +49,7 @@ public class TorsoAnimator : LimbAnimator {
         if (being.IsAttacking()) return;
         
         LeanTorso();
+        BounceTorso();
         // Keep torso pointed forwards
         TargetLookAt(Vector3.forward);
         // TODO idle breathing?
@@ -57,7 +58,7 @@ public class TorsoAnimator : LimbAnimator {
         // on lock-on pr what enemy you would target,
         // or what pickups are near, etc
         UpdateLook();
-        ParentHead();
+        FixParenting();
     }
 
     void UpdateLook() {
@@ -83,12 +84,39 @@ public class TorsoAnimator : LimbAnimator {
         target.transform.position = Vector3.Lerp(leanFrom, leanTo, Time.deltaTime * 10);
     }
 
-    void ParentHead() {
-        // For now, have the head x/z follow the chest
-        // (but do not change height)
+    void BounceTorso() {
+        // When running, move the torso up/down with the pace
+
+        // TODO using max of all leg's step height
+        // was giving cycloid motion, but I think I want sin motion,
+        // so using this for now
+        // Get a random leg
+        var la = transform.parent.GetComponentInChildren<LegAnimator>();
+        // What 'part' of it's walk cycle is it in?
+        var degrees = la.degrees;
+        // Torso bounces once per step, so 'twice' per cycle
+        // (Want hips to be dipping, rather than lifting off group)
+        // TODO actually, should be 'number of legs' per step
+        var stepHeight = Mathf.Sin(degrees * Mathf.Deg2Rad * 2) - 2;
+        // Torso does not move as high as feet, as it is dampened
+        // TODO does this need config?
+        stepHeight *= la.StepHeight() * 0.08f;
+        
+        // Give height, but also a little forward motion
+        transform.localPosition = new Vector3(0, stepHeight, stepHeight/2);
+    }
+
+    void FixParenting() {
+        // Have the head x/z follow the chest,
+        // and the thighs folow the hips
         var pos = Vector3.Lerp(head.transform.position, target.transform.position, Time.deltaTime * 10);
         pos.y = head.transform.position.y;
         head.transform.position = pos;
+
+        // TOOD legs might have offsets (?)
+        foreach (var la in transform.parent.GetComponentsInChildren<LegAnimator>()) {
+            la.transform.localPosition = transform.localPosition;
+        }
     }
 
     float MaxLean() {

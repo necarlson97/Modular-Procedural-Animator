@@ -10,7 +10,7 @@ public abstract class Being : CustomBehavior {
     // These are just defaults - they should likely
     // be overriden by the subclass
     protected float walkSpeed = 2f;
-    protected float runSpeed = 5f;
+    protected float runSpeed = 8f;
     protected float jumpForce = 250f;
     protected float accelSpeed = 600f;
 

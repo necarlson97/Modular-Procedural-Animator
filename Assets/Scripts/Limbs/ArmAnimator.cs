@@ -49,8 +49,6 @@ public class ArmAnimator : LimbAnimator {
     void Rest() {
         // When standing still, bring arms down to sides
         PlaceTarget(landmarks.Get("Lowered"), RotDown());
-        Debug.Log(name+" Length: "+GetLength().ToString("F4"));
-        Debug.Log(name+"  Lower: "+landmarks.Get("Lowered").ToString("F4"));
     }
 
     void Gaurd() {

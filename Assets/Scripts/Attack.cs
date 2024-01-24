@@ -46,7 +46,8 @@ public class StrikeTarget {
         // Can also create with the limb and given names,
         // using the landmark system and the CustomBehavior
         // handy rotations method
-        Debug.Log(landmarkName+" strike target: "+limb);
+        // Debug.Log(landmarkName+" strike target: "+limb);
+        // TODO
         this.pos = limb.landmarks.Get(landmarkName);
         this.rot = CustomBehavior.Rotation(rotName);
     }

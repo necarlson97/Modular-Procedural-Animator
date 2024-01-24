@@ -165,6 +165,7 @@ public class LimbAnimator : CustomBehavior {
         Invoke("EnableRig", 0);
     }
 
+    internal Vector3 hintStart;
     protected void SetupTwoBone() {
         // Set up a two bone constraint, using midbone,
         // where everything before/after is basically rigid
@@ -179,6 +180,7 @@ public class LimbAnimator : CustomBehavior {
         var hintOffset = transform.forward * 0.2f * GetLength();
         var hintPos = GetMidBone().transform.position + hintOffset;
         hint = CreateEmpty("Hint", hintPos);
+        hintStart = hint.transform.localPosition;
 
         // Setting IK information
         ik.data.target = target.transform;

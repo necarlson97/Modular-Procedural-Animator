@@ -10,8 +10,8 @@ public class LegAnimator : LimbAnimator {
     // Limb 'length' is known - these values
     // are a ratio of the limb's total length
     // TODO how do these look?
-    protected float stepLengthRatio = .4f;
-    protected float stepHeightRatio = .3f;
+    protected float stepLengthRatio = 2f;
+    protected float stepHeightRatio = .35f;
 
     protected override void AfterStart() {
         // TODO not sure if this is the cleanest way
@@ -61,30 +61,32 @@ public class LegAnimator : LimbAnimator {
     public void PlaceFoot(){
         // Find foot placements, and lerp to them
 
-        var footPlacement = GetFootPlacement(
-            lastPlacement, _targetStartPos, IsOffset());
+        var footPlacement = GetFootPlacement(lastPlacement, _targetStartPos);
 
         // Place foot in world position - not local
         PlaceTarget(footPlacement, false);
         lastPlacement = footPlacement;
+        // To prevent knee rotation when strafing, move hint
+        // along with ellipse for now
+        var hintOffsetX = GetEllipsePoint().x / 2;
+        hint.transform.localPosition = new Vector3(
+            hintStart.x + hintOffsetX, hintStart.y, hintStart.z);
     }
 
-    float degrees;
-    Vector3 GetEllipsePoint(bool offsetFoot=false) {
+    internal float degrees;
+    internal Vector3 GetEllipsePoint() {
         // Given where on the ellipse the foot would currently by,
         // return a point on that ellipse, keeping it rotated in the
         // direction of travel
 
         // How much to move foot along ellipse
         // TODO imperfect - but seems close enough for now
-        var gaitLength = Mathf.Max(2 * EllipsePerimiter() / being.WalkVelocity().magnitude, 0.01f);
+        var gaitLength = Mathf.Max(3 * EllipsePerimiter() / being.WalkVelocity().magnitude, 0.01f);
         var d = 360 / gaitLength * Time.deltaTime;
         degrees = (degrees - d) % 360;
-        // Offset one of the feet by 180 degrees
-        var footDegrees = offsetFoot ? degrees + 180 : degrees;
 
-        var z = StepLength(footDegrees);
-        var y = StepHeight(footDegrees);
+        var z = StepLength(degrees);
+        var y = StepHeight(degrees);
 
         var ellipsePoint = new Vector3(0, y, z);
 
@@ -93,7 +95,9 @@ public class LegAnimator : LimbAnimator {
         return Quaternion.Euler(0, angle, 0) * ellipsePoint;
     }
 
-    Vector3 GetFootPlacement(Vector3 lastPlacement, Vector3 startingPos, bool offsetFoot=false) {
+    // TODO for gizmo, remove
+    RaycastHit gizmoGroundHit;
+    Vector3 GetFootPlacement(Vector3 lastPlacement, Vector3 startingPos) {
         // For a specific foot, find a placement that is either:
         // * in the air, along an ellipse path
         // * stationary where it hit the ground
@@ -115,16 +119,21 @@ public class LegAnimator : LimbAnimator {
         ellipseCenter += ellipseCenterOffset;
 
         // Find the spot along the ellipse this foot should be at 
-        var ellipsePos = ellipseCenter + GetEllipsePoint(offsetFoot);
+        var ellipsePos = ellipseCenter + GetEllipsePoint();
         // and see if that spot is mid-step, or 'under the ground'
         var groundHit = GetGroundPlacement(ellipsePos, startingPos);
         bool belowGround = groundHit.transform != null;
         
         // TODO might have to have programatic offsets or something
         // For now, target bone is actually in foot, rather than on bottom of it
-        // if (belowGround) groundHit.point += new Vector3(0, MaxStepHeight() * .01f, 0);
+        // if (belowGround) {
+        //     // groundHit.point += new Vector3(0, MaxStepHeight() * .01f, 0);
+        //     // groundHit.point += new Vector3(0, .2f, 0);
+        // }
 
         Debug.DrawLine(ellipseCenter, ellipsePos, Color.blue);
+        gizmoGroundHit = groundHit;
+        Debug.DrawLine(groundHit.point, target.transform.position, Color.yellow);
 
         // TODO we should likely have an in-air posing algorythm
         if (being.InAir()) return InAirPos(lastPlacement, startingPos, groundHit);
@@ -133,7 +142,9 @@ public class LegAnimator : LimbAnimator {
         // If we are at rest, make sure feet are near ground
         if (!being.IsWalking()) return groundHit.point;
         // Otherwise, leave it where it was - near the ground
-        return lastPlacement;
+        // return lastPlacement;
+        // TODO
+        return groundHit.point;
 
         // TODO need to rotate foot to ground, but limit the angles
         // footTarget.transform.rotation = Quaternion.LookRotation(hit.normal) * Quaternion.Euler(0, 0, 180);
@@ -161,14 +172,18 @@ public class LegAnimator : LimbAnimator {
         // Get the general step height for this walk/run speed
         return MaxStepHeight() * being.Rush();
     }
-    float StepLength(float footDegrees) {
+    internal float StepLength(float degrees) {
         // Get exact stride displacement for this foot,
         // given 'angle' in walk cicle elipse
+
+        // Offset one of the feet by 180 degrees
+        var footDegrees = IsOffset() ? degrees + 180 : degrees;
         return StepLength() * Mathf.Cos(footDegrees * Mathf.Deg2Rad);
     }
-    float StepHeight(float footDegrees) {
+    internal float StepHeight(float degrees) {
         // Get exact step height for this foot,
         // given 'angle' in walk cicle elipse
+        var footDegrees = IsOffset() ? degrees + 180 : degrees;
         return StepHeight() * Mathf.Sin(footDegrees * Mathf.Deg2Rad);
     }
     public float MaxStepLength() { return GetLength() * stepLengthRatio; }
@@ -206,6 +221,8 @@ public class LegAnimator : LimbAnimator {
             footDirection *= distance;
         }
 
+        Debug.DrawLine(root, root+footDirection, Color.green);
+
         // Only register hits on ground
         // TODO could make this smarter for
         // walking over ragdolls, etc
@@ -218,8 +235,11 @@ public class LegAnimator : LimbAnimator {
     }
 
     // TODO debug key
-    // void OnDrawGizmos()  {
-    //     Handles.Label(transform.position, "Degrees: "+degrees);
-    // }
+    void OnDrawGizmos()  {
+        Handles.Label(transform.position, "Degrees: "+degrees);
+
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawSphere(gizmoGroundHit.point, .02f);
+    }
     
 }

@@ -5,8 +5,9 @@ using UnityEngine.UI;
 
 public class DevUI : MonoBehaviour {
     // Handles logic for dev tools on the screen
+    Slider timeSlider;
     void Start() {
-        Slider timeSlider = GetComponentInChildren<Slider>();
+        timeSlider = transform.Find("TimeSlider").GetComponent<Slider>();
         Time.timeScale = timeSlider.value;
 
         CustomInput.GetAction("Inc Time").canceled += (
@@ -15,9 +16,12 @@ public class DevUI : MonoBehaviour {
         CustomInput.GetAction("Dec Time").canceled += (
             ctx => { DecrementTime(); }
         );
+        timeSlider.onValueChanged.AddListener(delegate { SliderChanged(); });
+
+        SliderChanged();
     }
 
-    public void SliderChanged(Slider timeSlider) {
+    public void SliderChanged() {
         Time.timeScale = timeSlider.value;
     }
 
