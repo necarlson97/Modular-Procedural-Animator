@@ -177,7 +177,7 @@ public class LimbAnimator : CustomBehavior {
         }
         // For now, just create a hint empty right infront of the limb,
         // - then we can worry about changing it in a subscript
-        var hintOffset = transform.forward * 0.2f * GetLength();
+        var hintOffset = transform.forward * 0.8f * GetLength();
         var hintPos = GetMidBone().transform.position + hintOffset;
         hint = CreateEmpty("Hint", hintPos);
         hintStart = hint.transform.localPosition;
@@ -420,5 +420,7 @@ public class LimbAnimator : CustomBehavior {
         // Translucent blue
         Gizmos.color = new Color(0f, 0f, 1f, .5f);
         Gizmos.DrawCube(hint.transform.position, dimensions);
+
+        landmarks.OnDrawGizmos();
     }
 }

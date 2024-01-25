@@ -40,7 +40,7 @@ public class LimbSpring : CustomBehavior {
         return springRoot;
     }
 
-    void FixedUpdate() {
+    void Update() {
         HandlePos();
         HandleRot();
     }
@@ -63,8 +63,8 @@ public class LimbSpring : CustomBehavior {
         Vector3 netForce = springForce + dampingForce;
         Vector3 acceleration = netForce * mass;
 
-        velocity += acceleration * Time.deltaTime;
-        target.transform.position += velocity * Time.deltaTime;
+        velocity += acceleration * Time.fixedDeltaTime;
+        target.transform.position += velocity * Time.fixedDeltaTime;
 
         // TODO clamp displacement, and 'snap' when close
         // Add a bit of the parent rigidbody into the calculation

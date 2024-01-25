@@ -15,7 +15,8 @@ public class ArmAnimator : LimbAnimator {
     protected override void AfterStart() {
         // Elbows point 'behind' when starting in T-pose
         var hintPos = landmarks.Get("WideWaist");
-        hintPos -= transform.forward * .5f * GetDepth();
+        hintPos += transform.forward * -1f * GetDepth();
+        hintPos += transform.up * 1f * GetLength();
         hint.transform.position = hintPos;
         // Correctly attach shoulders before toso has chance to move
         ParentShoulder();
@@ -41,8 +42,7 @@ public class ArmAnimator : LimbAnimator {
         // should be doing, then attack or whatever can override
         if (being.IsAttacking()) return;
         else if (being.IsGaurding()) Gaurd();
-        else if (being.IsRunning()) RunCycle();
-        else if (being.IsWalking()) WalkCycle();
+        else if (being.IsWalking()) RunCycle();
         else Rest();
     }
 
@@ -62,37 +62,32 @@ public class ArmAnimator : LimbAnimator {
         // Cycle for 'pumping' arms when running
 
         // If we don't have opposing leg,
-        // you wouldn't pump that arm, right?
+        // you wouldn't pump that arm... right?
         var leg = GetLeg(true);
         if (leg == null) return;
 
-        // Use opposite leg to show us where we are
-        // in the arm pump motion
-        var legPos = leg.target.transform.localPosition;
+        // Where that leg is in its step, and we move more when moving faster
+        var progress = leg.StepProgress();
+        if (!being.MovingFoward()) progress = (progress + 0.5f) % 1;
 
-        var downPos = landmarks.Get("Holster");
-        var upPos = landmarks.Get("Chest");
+        // TODO does using foor rot curve work?
+        var zCurve = Resources.Load<CurveData>("HandZ").curve;
+        var yCurve = Resources.Load<CurveData>("HandY").curve;
+        var z = zCurve.Evaluate(progress) * GetLength();
+        var y = yCurve.Evaluate(progress) * GetLength();
 
-        // Remap where the foot is to a 0-1 lerpable progress
-        var stepRadius = leg.MaxStepLength();
-        var progress = Remap(legPos.z, -stepRadius, stepRadius, .2f, .8f);
-        var currentPos = Vector3.Lerp(downPos, upPos, progress);
+        var rotCurve = Resources.Load<CurveData>("HandRot").curve;
+        var rot = rotCurve.Evaluate(progress);
+        var runRot = Quaternion.Slerp(RotDown(), RotForward(), rot);
 
-        // Rotate the placement around the movement vector
-        // Limiting to 'forward' angles
-        var angleLimit = 35;
-        var moveEuler = (
-            Quaternion.LookRotation(being.WalkVelocity())
-            * Quaternion.Inverse(transform.rotation)
-        ).eulerAngles;
-        if (moveEuler.y > 180) moveEuler.y -= 360;
-        if (moveEuler.y > -angleLimit && moveEuler.y < angleLimit) {
-            currentPos = Quaternion.Euler(moveEuler) * currentPos;
-        }
-        
-        // Simmilarly, lets try lerping our rotation
-        var currentRot = Quaternion.Lerp(RotForward(), RotUp(), progress);
-        currentRot = Quaternion.Euler(moveEuler) * currentRot;
+        // Interpolate depending on how fast we are running
+        var restRot = RotDown();
+        var currentRot = Quaternion.Lerp(restRot, runRot, being.Rush());
+
+        var restPos = landmarks.Get("Waist");
+        var runPos = restPos + new Vector3(0, y, z);
+        var currentPos = Vector3.Lerp(restPos, runPos, being.Rush());
+
         PlaceTarget(currentPos, currentRot);
     }
 

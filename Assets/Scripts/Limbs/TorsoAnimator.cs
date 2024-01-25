@@ -7,7 +7,10 @@ public class TorsoAnimator : LimbAnimator {
 
     // Ratio of the total torso length that
     // they will lean forward when running
-    float maxLeanRatio = 0.5f;
+    float maxLeanRatio = 0.4f;
+    // Simmilar for twist
+    float twistRatio = 0.6f;
+    // TODO config crouch ammount?
 
     // IK target for placing the head
     GameObject head;
@@ -50,9 +53,7 @@ public class TorsoAnimator : LimbAnimator {
         
         LeanTorso();
         BounceTorso();
-        // Keep torso pointed forwards
-        TargetLookAt(Vector3.forward);
-        // TODO idle breathing?
+        RotateTorso();
         
         // TODO I think we want to lean keep head focused
         // on lock-on pr what enemy you would target,
@@ -76,7 +77,7 @@ public class TorsoAnimator : LimbAnimator {
         leanDirection *= Mathf.Max(.2f, forwardsMotion);
 
 
-        if (being.IsCrouched())  leanDirection += transform.forward * .2f;
+        if (being.IsCrouched())  leanDirection += transform.forward * .5f;
 
         // TODO use PlaceTarget
         var leanFrom = target.transform.position;
@@ -86,24 +87,42 @@ public class TorsoAnimator : LimbAnimator {
 
     void BounceTorso() {
         // When running, move the torso up/down with the pace
-
-        // TODO using max of all leg's step height
-        // was giving cycloid motion, but I think I want sin motion,
-        // so using this for now
-        // Get a random leg
-        var la = transform.parent.GetComponentInChildren<LegAnimator>();
-        // What 'part' of it's walk cycle is it in?
-        var degrees = la.degrees;
+        var leg = GetLeg();
         // Torso bounces once per step, so 'twice' per cycle
         // (Want hips to be dipping, rather than lifting off group)
         // TODO actually, should be 'number of legs' per step
-        var stepHeight = Mathf.Sin(degrees * Mathf.Deg2Rad * 2) - 2;
+        var tau = Mathf.PI * 2;
+        var progress = leg.StepProgress();
+        // Advance progress a little, lines up better
+        // TODO sloopy? config?
+        progress += .1f;
+        var stepHeight = Mathf.Sin(progress * tau * 2) - 3;
         // Torso does not move as high as feet, as it is dampened
         // TODO does this need config?
-        stepHeight *= la.StepHeight() * 0.08f;
+        stepHeight *= leg.StepHeight() * 0.08f;
         
         // Give height, but also a little forward motion
-        transform.localPosition = new Vector3(0, stepHeight, stepHeight/2);
+        // - and lerp there slowly
+        var from = transform.localPosition;
+        var to = new Vector3(0, stepHeight, stepHeight/2);
+        transform.localPosition = Vector3.Lerp(from, to, Time.deltaTime * 30);
+    }
+
+    void RotateTorso() {
+        // Keep torso pointed forwards,
+        // but twist a little when running
+        // TODO idle breathing?
+        if (!being.IsRunning()) {
+            TargetLookAt(Vector3.forward);
+            return;
+        }
+        var stepProgress = GetLeg().StepProgress();
+        var tau = Mathf.PI*2;
+        var twistProgress = Mathf.Cos(stepProgress * tau);
+
+        var horiz = Vector3.Lerp(Vector3.right, -Vector3.right, twistProgress);
+        horiz *= GetWidth() * being.Rush() * twistRatio;
+        TargetLookAt(Vector3.forward + horiz);
     }
 
     void FixParenting() {

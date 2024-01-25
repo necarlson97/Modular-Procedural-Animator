@@ -26,13 +26,15 @@ public class Treadmill : Being {
         SetupSlider("MovementSliderX");
         SetupSlider("MovementSliderZ");
 
+        // Zero movement
+        SetupButton("ZeroButton");
+
         // Have us moving by default
         SetMovement();
         ToggleRun();
     }
 
     void SetupButton(string buttonName) {
-        Debug.Log("Finding "+buttonName);
         Button button = GameObject.Find("UI/"+buttonName).GetComponent<Button>();
         string methodName = buttonName.Replace("Button", "");
         button.onClick.AddListener(delegate { Invoke(methodName, 0f); });
@@ -52,6 +54,14 @@ public class Treadmill : Being {
         var z = movementSliderZ.value * 2 - 1;
         var movement = new Vector3(x, 0, z);
         SetMovement(movement);
+    }
+
+    void Zero() {
+        Slider movementSliderX = GameObject.Find("MovementSliderX").GetComponent<Slider>();
+        Slider movementSliderZ = GameObject.Find("MovementSliderZ").GetComponent<Slider>(); 
+        movementSliderX.value = 0.5f;
+        movementSliderZ.value = 0.5f;
+        SetMovement();
     }
 
     Vector3 startPos;

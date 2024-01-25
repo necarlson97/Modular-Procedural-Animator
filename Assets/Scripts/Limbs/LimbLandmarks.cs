@@ -3,6 +3,7 @@ using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEditor;
 
 public class LimbLandmarks {
     // Class for handling the landmarks
@@ -48,6 +49,12 @@ public class LimbLandmarks {
         }
         return _landmarks[name].Get(left);
     }
+
+    internal void OnDrawGizmos() {
+        foreach (var l in _landmarks.Values) {
+            l.OnDrawGizmos();
+        }
+    }
 }
 
 public abstract class Landmark {
@@ -76,7 +83,7 @@ public abstract class Landmark {
     // handled by the base class?
     protected abstract Vector3 Calcualte(bool left);
 
-    public Vector3 Get(bool? left) {
+    public Vector3 Get(bool? left=null) {
         // Return the desired position
         var knownLeft = IsLeft(left);
         if (knownLeft) return _leftPosition;
@@ -99,6 +106,14 @@ public abstract class Landmark {
         // otherwise default to if we are on left
         if (left != null) return (bool) left;
         return _limb.IsLeft();
+    }
+
+    internal void OnDrawGizmos() {
+        // Show the landmark's name in space
+        var name = GetType().Name;
+        Handles.Label(transform.position+Get(), name);
+        Gizmos.color = Color.gray;
+        Gizmos.DrawSphere(transform.position+Get(), .001f);
     }
 }
 
@@ -181,7 +196,18 @@ public class Extended : Landmark {
     public Extended(LimbAnimator limb) : base(limb) {}
     protected override Vector3 Calcualte(bool left) {
         var pos = GetTorso().GetChestBone().transform.position;
-        var frontOffset = GetLength() * .8f * transform.forward;
+        var frontOffset = GetLength() * 1f * transform.forward;
+        pos += frontOffset;
+        // For now, no side offset
+        return pos;
+    }
+}
+public class ExtendedBack : Landmark {
+    // The space directly behind, where someone rear back
+    public ExtendedBack(LimbAnimator limb) : base(limb) {}
+    protected override Vector3 Calcualte(bool left) {
+        var pos = GetTorso().GetChestBone().transform.position;
+        var frontOffset = GetLength() * -1.8f * transform.forward;
         pos += frontOffset;
         // For now, no side offset
         return pos;

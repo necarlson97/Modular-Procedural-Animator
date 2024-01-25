@@ -223,8 +223,8 @@ public abstract class Being : CustomBehavior {
     protected void UpdateCrouch() {
         // Handle crouching, squatting before jump, etc
         var collider = transform.Find("Walk Collider");
-        if (_prejump) collider.localScale = new Vector3(1, .55f, 1);
-        else if (_crouching) collider.localScale = new Vector3(1, .65f, 1);
+        if (_prejump) collider.localScale = new Vector3(1, .65f, 1);
+        else if (_crouching) collider.localScale = new Vector3(1, .75f, 1);
         else collider.localScale= new Vector3(1, 1, 1);
     }
 
@@ -252,6 +252,7 @@ public abstract class Being : CustomBehavior {
     // The % of the controllers max speed they are moving
     public float Rush() { return WalkVelocity().magnitude / runSpeed; }
     public float ForwardRush() { return ForwardVelocity() / runSpeed; }
+    // TODO or also running, better name... Ambulating?
     public bool IsWalking() { return WalkVelocity().magnitude > 0.001f; }
     public bool IsAttacking() { return GetWeapon().IsAttacking(); }
 

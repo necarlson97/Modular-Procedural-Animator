@@ -1,0 +1,56 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8a7a7d81c283ade4ab0aa103897739cd, type: 3}
+  m_Name: HandZ
+  m_EditorClassIdentifier: 
+  curve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0.010084795
+      value: 0.0068931878
+      inSlope: 1.4920002
+      outSlope: 1.4920002
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0.48937717
+    - serializedVersion: 3
+      time: 0.23131052
+      value: 0.7683021
+      inSlope: -0.019918801
+      outSlope: -0.019918801
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 1
+    - serializedVersion: 3
+      time: 0.738907
+      value: -0.71938896
+      inSlope: 0.03299977
+      outSlope: 0.03299977
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 1
+    - serializedVersion: 3
+      time: 1.0068421
+      value: 0.009944767
+      inSlope: 0.1450272
+      outSlope: 0.1450272
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.36332572
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 1
+    m_RotationOrder: 4

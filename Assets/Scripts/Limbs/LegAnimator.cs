@@ -3,21 +3,31 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 
-
 public class LegAnimator : LimbAnimator {
     
     
     // Limb 'length' is known - these values
     // are a ratio of the limb's total length
     // TODO how do these look?
-    protected float stepLengthRatio = 2f;
-    protected float stepHeightRatio = .35f;
+    protected float stepLengthRatio = 2.5f;
+    protected float stepHeightRatio = .5f;
+    protected float strideHertz = 1.5f;
+
+    // Path that the foor takes during a single step
+    // (will use a default if none is defined)
+    // TODO do we need x vs y?
+    public CurveData footCurve;
 
     protected override void AfterStart() {
         // TODO not sure if this is the cleanest way
         // - method on parent?
         _targetStartRot = RotFlatForward();
         target.transform.localRotation = _targetStartRot;
+
+        // Load the default step curve if we aren't given a specifc one
+        if (footCurve == null) {
+            footCurve = Resources.Load<CurveData>("Foot");
+        }
     }
 
     public void Update() {
@@ -65,6 +75,9 @@ public class LegAnimator : LimbAnimator {
 
         // Place foot in world position - not local
         PlaceTarget(footPlacement, false);
+        // But rotation is local
+        PlaceTarget(GetFootRotation());
+
         lastPlacement = footPlacement;
         // To prevent knee rotation when strafing, move hint
         // along with ellipse for now
@@ -73,20 +86,27 @@ public class LegAnimator : LimbAnimator {
             hintStart.x + hintOffsetX, hintStart.y, hintStart.z);
     }
 
-    internal float degrees;
+    internal float StepProgress() {
+        // 0-1, how far along are we in the step
+        var p = (Time.time * strideHertz) % 1;
+        // Offset one foot by half-step
+        return IsOffset() ? p + 0.5f : p;
+    }
+
     internal Vector3 GetEllipsePoint() {
         // Given where on the ellipse the foot would currently by,
         // return a point on that ellipse, keeping it rotated in the
         // direction of travel
+        // Note: Now that we use AnimationCurve, not a true 'ellipse',
+        // could rename
 
-        // How much to move foot along ellipse
-        // TODO imperfect - but seems close enough for now
-        var gaitLength = Mathf.Max(3 * EllipsePerimiter() / being.WalkVelocity().magnitude, 0.01f);
-        var d = 360 / gaitLength * Time.deltaTime;
-        degrees = (degrees - d) % 360;
+        // How much to move foot along in its progress
+        // TODO define gait duration, perhaps in hz?
+        // var speed = being.WalkVelocity().magnitude;
 
-        var z = StepLength(degrees);
-        var y = StepHeight(degrees);
+
+        var z = StepLength(StepProgress());
+        var y = StepHeight(StepProgress());
 
         var ellipsePoint = new Vector3(0, y, z);
 
@@ -139,11 +159,7 @@ public class LegAnimator : LimbAnimator {
         if (being.InAir()) return InAirPos(lastPlacement, startingPos, groundHit);
         // If foot is mid-step, move it
         if (!belowGround) return ellipsePos;
-        // If we are at rest, make sure feet are near ground
-        if (!being.IsWalking()) return groundHit.point;
-        // Otherwise, leave it where it was - near the ground
-        // return lastPlacement;
-        // TODO
+        // Otherwise, leave it on ground
         return groundHit.point;
 
         // TODO need to rotate foot to ground, but limit the angles
@@ -161,6 +177,20 @@ public class LegAnimator : LimbAnimator {
         return lastPlacement;
     }
 
+    Quaternion GetFootRotation() {
+        // Foot 'looks down at' the ground
+        // for now, use these values and preset curve
+        var curve = Resources.Load<CurveData>("FootRot").curve;
+        var progress = StepProgress();
+        if (!being.MovingFoward()) progress *= -1;
+        var x = curve.Evaluate(progress);
+
+        // Interpolate depending on how fast we are running
+        var runRot = Quaternion.Euler(x * 180, 0, 0);
+        var restRot = Quaternion.Euler(90, 0, 0);
+        return Quaternion.Lerp(restRot, runRot, being.Rush());
+    }
+
     // Step size is a function of how fast we are running
     public float StepLength() {
         // Get the general stride length for this walk/run speed
@@ -172,19 +202,18 @@ public class LegAnimator : LimbAnimator {
         // Get the general step height for this walk/run speed
         return MaxStepHeight() * being.Rush();
     }
-    internal float StepLength(float degrees) {
+    internal float StepLength(float stepProgress) {
         // Get exact stride displacement for this foot,
         // given 'angle' in walk cicle elipse
-
-        // Offset one of the feet by 180 degrees
-        var footDegrees = IsOffset() ? degrees + 180 : degrees;
-        return StepLength() * Mathf.Cos(footDegrees * Mathf.Deg2Rad);
+        // TODO could use curve, but for now, using Cos
+        var tau = Mathf.PI * 2;
+        return StepLength() * -Mathf.Cos(stepProgress * tau);
     }
-    internal float StepHeight(float degrees) {
+    internal float StepHeight(float stepProgress) {
         // Get exact step height for this foot,
         // given 'angle' in walk cicle elipse
-        var footDegrees = IsOffset() ? degrees + 180 : degrees;
-        return StepHeight() * Mathf.Sin(footDegrees * Mathf.Deg2Rad);
+        // TODO use curve, but for now, using Sin
+        return StepHeight() * footCurve.curve.Evaluate(stepProgress);
     }
     public float MaxStepLength() { return GetLength() * stepLengthRatio; }
     public float MaxStepHeight() { return GetLength() * stepHeightRatio; }
@@ -236,8 +265,7 @@ public class LegAnimator : LimbAnimator {
 
     // TODO debug key
     void OnDrawGizmos()  {
-        Handles.Label(transform.position, "Degrees: "+degrees);
-
+        Handles.Label(transform.position, "stepProgress: "+StepProgress().ToString("F2"));
         Gizmos.color = Color.yellow;
         Gizmos.DrawSphere(gizmoGroundHit.point, .02f);
     }
