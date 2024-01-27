@@ -18,10 +18,11 @@ public class ArmAnimator : LimbAnimator {
         hintPos += transform.forward * -1f * GetDepth();
         hintPos += transform.up * 1f * GetLength();
         hint.transform.position = hintPos;
-        // Correctly attach shoulders before toso has chance to move
-        ParentShoulder();
         // For now, swapping to using a springy connection
         SetupSpring();
+
+        // Parent root to torso's chest
+        SurrogateChild.Setup(skeleton.transform, GetTorso().GetChestBone().transform);
     }
 
     public void Update() {
@@ -94,33 +95,5 @@ public class ArmAnimator : LimbAnimator {
     void WalkCycle() {
         // For now, just lifting arms a bit
         PlaceTarget(landmarks.Get("Waist"), RotForward());
-    }
-
-    public void LateUpdate() {
-        ParentShoulder();
-    }
-
-    Vector3 _shoulderOffset;
-    void ParentShoulder() {
-        // Keep the shoulder attached to the torso as it leans
-        // and whatnot
-        // Note: we canot use ParentConstraint components as
-        // it messes up IK targeting (for now)
-        // Nor can we use just getting the info from an intermediary
-        // bone - as strangley the localPosition appears unchained
-        // for bones themselves - but does change on the
-        // 'attachment' child we will create
-        // We may be able to use typical parenting, but it seems
-        // less clean for now
-
-        // Shorthand for the bone transforms
-        var shoulder = GetRootBone().transform;
-        var chest = GetTorso().GetChestBone().transform;
-
-        // Set offset if 1st time:
-        if (_shoulderOffset == default(Vector3)) {
-            _shoulderOffset = shoulder.position - chest.position;
-        } 
-        shoulder.position = chest.position + (chest.rotation * _shoulderOffset);
     }
 }

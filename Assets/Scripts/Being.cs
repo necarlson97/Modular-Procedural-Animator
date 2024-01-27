@@ -80,7 +80,7 @@ public abstract class Being : CustomBehavior {
 
         // Turn to look - but only if we are actually moving
         var lookRot = Quaternion.LookRotation(lookTarget - transform.position);
-        var lookSpeed = 10 * Rush() * Time.deltaTime;
+        var lookSpeed = 10 * Rush() * Time.fixedDeltaTime;
         transform.rotation = Quaternion.Lerp(transform.rotation, lookRot, lookSpeed);
     }
 

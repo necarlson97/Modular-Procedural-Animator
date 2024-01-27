@@ -11,7 +11,7 @@ public class LegAnimator : LimbAnimator {
     // TODO how do these look?
     protected float stepLengthRatio = 2.5f;
     protected float stepHeightRatio = .5f;
-    protected float strideHertz = 1.5f;
+    protected float strideHertz = 1.4f;
 
     // Path that the foor takes during a single step
     // (will use a default if none is defined)
@@ -28,6 +28,9 @@ public class LegAnimator : LimbAnimator {
         if (footCurve == null) {
             footCurve = Resources.Load<CurveData>("Foot");
         }
+
+        // Parent to hips (torso's root)
+        SurrogateChild.Setup(skeleton.transform, GetTorso().GetRootBone().transform);
     }
 
     public void Update() {
@@ -143,13 +146,6 @@ public class LegAnimator : LimbAnimator {
         // and see if that spot is mid-step, or 'under the ground'
         var groundHit = GetGroundPlacement(ellipsePos, startingPos);
         bool belowGround = groundHit.transform != null;
-        
-        // TODO might have to have programatic offsets or something
-        // For now, target bone is actually in foot, rather than on bottom of it
-        // if (belowGround) {
-        //     // groundHit.point += new Vector3(0, MaxStepHeight() * .01f, 0);
-        //     // groundHit.point += new Vector3(0, .2f, 0);
-        // }
 
         Debug.DrawLine(ellipseCenter, ellipsePos, Color.blue);
         gizmoGroundHit = groundHit;

@@ -282,9 +282,9 @@ public class LimbAnimator : CustomBehavior {
         return target.transform.localPosition - _targetStartPos;
     }
 
-    public void PlaceTarget(Vector3 destination, bool local=true) {
+    public void Place(GameObject obj, Vector3 destination, bool local=true) {
         // Just becasue we will use it often -
-        // moving the target more smoothly with lerp
+        // moving the target/root/whatever more smoothly with lerp
         // TODO the lerp speed will likely be depending on size and
         // 'personality' - like the idea for 'frenzy' or what-have-you
         // TODO should we just default to using LimbSpring and not
@@ -292,60 +292,111 @@ public class LimbAnimator : CustomBehavior {
         var baseSpeed = 30f;
         var progress = baseSpeed * Time.deltaTime;
         if (local) {
-            target.transform.localPosition = Vector3.Lerp(
-                target.transform.localPosition, destination, progress);
+            obj.transform.localPosition = Vector3.Lerp(
+                obj.transform.localPosition, destination, progress);
         } else {
-            target.transform.position = Vector3.Lerp(
-                target.transform.position, destination, progress);
+            obj.transform.position = Vector3.Lerp(
+                obj.transform.position, destination, progress);
         }
     }
-    public void PlaceTarget(Vector3 destination, Quaternion rotation, bool local=true) {
+    public void Place(GameObject obj, Vector3 destination, Quaternion rotation, bool local=true) {
         var baseRotSpeed = 100f;
         var progress = baseRotSpeed * Time.deltaTime;
-        PlaceTarget(rotation, local);
-        PlaceTarget(destination, local);
+        Place(obj, rotation, local);
+        Place(obj, destination, local);
     }
-    public void PlaceTarget(Vector3 destination, Vector3 lookAt, bool local=true) {
-        TargetLookAt(lookAt);
-        PlaceTarget(destination, local);
+    public void Place(GameObject obj, Vector3 destination, Vector3 lookAt, bool local=true) {
+        LookAt(obj, lookAt);
+        Place(obj, destination, local);
     }
-    public void PlaceTarget(Quaternion rotation, bool local=true) {
+    public void Place(GameObject obj, Quaternion rotation, bool local=true) {
         var baseRotSpeed = 30f;
         var progress = baseRotSpeed * Time.deltaTime;
         if (local) {
-            target.transform.localRotation = Quaternion.Slerp(
-                target.transform.localRotation, rotation, progress);
+            obj.transform.localRotation = Quaternion.Slerp(
+                obj.transform.localRotation, rotation, progress);
         } else {
-            target.transform.rotation = Quaternion.Slerp(
-                target.transform.rotation, rotation, progress);
+            obj.transform.rotation = Quaternion.Slerp(
+                obj.transform.rotation, rotation, progress);
         }
     }
-    public void TargetLookAt(Vector3 lookAt, bool local=true) {
+
+    public void Snap(GameObject obj, Vector3 destination, bool local=true) {
+        // Instantly move a root/target/whatever - no smooth lerping
+        // TODO maybe rename 'Place' to 'Lerp' or whatever
+        if (local) obj.transform.localPosition = destination;
+        else obj.transform.position = destination;
+    }
+    public void Snap(GameObject obj, Vector3 destination, Quaternion rotation, bool local=true) {
+        if (local) obj.transform.localRotation = rotation;
+        else obj.transform.rotation = rotation;
+        Snap(obj, destination, local);
+    }
+    public void Snap(GameObject obj, Vector3 destination, Vector3 lookAt, bool local=true) {
+        Quaternion rot;
+        if (local) rot = Quaternion.LookRotation(lookAt, Vector3.up);
+        else rot = Quaternion.LookRotation(lookAt, transform.up);
+        Snap(obj, destination, rot, local);
+    }
+
+    // Methods for moving target
+    public void SnapTarget(Vector3 destination, bool local=true) {
+        Snap(target, destination, local);
+    }
+    public void SnapTarget(Vector3 destination, Quaternion rotation, bool local=true) {
+        Snap(target, destination, rotation, local);
+    }
+    public void SnapTarget(Vector3 destination, Vector3 lookAt, bool local=true) {
+        Snap(target, destination, lookAt, local);
+    }
+    public void PlaceTarget(Vector3 destination, bool local=true) {
+        Place(target, destination, local);
+    }
+    public void PlaceTarget(Vector3 destination, Quaternion rotation, bool local=true) {
+        Place(target, destination, rotation, local);
+    }
+    public void PlaceTarget(Vector3 destination, Vector3 lookAt, bool local=true) {
+        Place(target, destination, lookAt, local);
+    }
+    public void PlaceTarget(Quaternion rotation, bool local=true) {
+        Place(target, rotation, local);
+    }
+
+    // Simmilar methods, for changing root bone pos
+    // (for, say, parenting. Should be a better way...)
+    // TODO rename to something else? Even though it feels like snapping the root,
+    // we are actually moving this gameovject - as we aren't
+    // allowed to touch any actual bone, including the root and skeleton
+    public void SnapRoot(Vector3 destination, bool local=true) {
+        Snap(gameObject, destination, local);
+    }
+    public void SnapRoot(Vector3 destination, Quaternion rotation, bool local=true) {
+        Snap(gameObject, destination, rotation, local);
+    }
+    public void SnapRoot(Vector3 destination, Vector3 lookAt, bool local=true) {
+        Snap(gameObject, destination, lookAt, local);
+    }
+    public void PlaceRoot(Vector3 destination, bool local=true) {
+        Place(gameObject, destination, local);
+    }
+    public void PlaceRoot(Vector3 destination, Quaternion rotation, bool local=true) {
+        Place(gameObject, destination, rotation, local);
+    }
+    public void PlaceRoot(Vector3 destination, Vector3 lookAt, bool local=true) {
+        Place(gameObject, destination, lookAt, local);
+    }
+    public void PlaceRoot(Quaternion rotation, bool local=true) {
+        Place(gameObject, rotation, local);
+    }
+
+    public void LookAt(GameObject obj, Vector3 lookAt, bool local=true) {
         Quaternion rot = LookRotation(lookAt, local);
-        PlaceTarget(rot, local);
+        Place(obj, rot, local);
     }
     public Quaternion LookRotation(Vector3 lookAt, bool local=true) {
         // Just shorithand for Quaternion.LookRotation
         if (local) return Quaternion.LookRotation(lookAt, Vector3.up);
         else return Quaternion.LookRotation(lookAt, transform.up);
-    }
-
-    public void SnapTarget(Vector3 destination, bool local=true) {
-        // Instantly move the IK target - no smooth lerping
-        // TODO maybe rename PlaceTarget to LerpTarget or whatever
-        if (local) target.transform.localPosition = destination;
-        else target.transform.position = destination;
-    }
-    public void SnapTarget(Vector3 destination, Quaternion rotation, bool local=true) {
-        if (local) target.transform.localRotation = rotation;
-        else target.transform.rotation = rotation;
-        SnapTarget(destination, local);
-    }
-    public void SnapTarget(Vector3 destination, Vector3 lookAt, bool local=true) {
-        Quaternion rot;
-        if (local) rot = Quaternion.LookRotation(lookAt, Vector3.up);
-        else rot = Quaternion.LookRotation(lookAt, transform.up);
-        SnapTarget(destination, rot, local);
     }
     
     public Vector3 TargetPos(bool local=true) {

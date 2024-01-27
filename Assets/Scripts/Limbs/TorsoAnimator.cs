@@ -7,20 +7,23 @@ public class TorsoAnimator : LimbAnimator {
 
     // Ratio of the total torso length that
     // they will lean forward when running
-    float maxLeanRatio = 0.4f;
-    // Simmilar for twist
-    float twistRatio = 0.6f;
+    float maxLeanRatio = 0.45f;
+    // Simmilar for twist / bounce
+    float twistRatio = 0.8f;
+    float bounceRatio = 0.1f;
     // TODO config crouch ammount?
 
     // IK target for placing the head
     GameObject head;
     protected override void BeforeStart() {
-        // For now, for testing, lets try target being shoulders,
+        // For now, for testing, lets try target being chest,
         // rather than head - we may need both...
         tipBone = ChildOf(ChildOf(GetMidBone()));
     }
     protected override void AfterStart() {
         // Setup a second IK for the head
+        // TODO is the head just another 'limb', and
+        // we should rewrite some of the parenting logic?
         var headIK = skeleton.AddComponent<ChainIKConstraint>();
         var shoulderBone = GetTipBone().transform;
         var headBone = GetLastBone().transform;
@@ -51,41 +54,39 @@ public class TorsoAnimator : LimbAnimator {
         }
         if (being.IsAttacking()) return;
         
-        LeanTorso();
-        BounceTorso();
-        RotateTorso();
+        var chestOffset = GetLean() + GetWobble();
+        var lookAt = GetRotation();
+        // Chest target
+        PlaceTarget(chestOffset + _targetStartPos, lookAt);
+
+        // Hips
+        var hipsOffset = GetBounce();
+        PlaceRoot(hipsOffset);
         
         // TODO I think we want to lean keep head focused
         // on lock-on pr what enemy you would target,
         // or what pickups are near, etc
-        UpdateLook();
-        FixParenting();
+        // UpdateLook();
+        // Head target
+
+        FixHead();
     }
 
-    void UpdateLook() {
-        // TODO look at something nearby?
-        // What you could pick up?
-    }
-
-    void LeanTorso() {
-        // Given the characters velocity, tilt
-        // "into" the movement, as humans do
+    Vector3 GetLean() {
+        // Given the characters velocity:
+        // * tilt into the motion
+        // * wobble & twist with arm pumping
         var leanDirection = being.WalkVelocity().normalized * being.Rush() * MaxLean();
         // Lean less if we are moving to the side
         var forwardsMotion = being.ForwardRush() / being.Rush();
         forwardsMotion = float.IsNaN(forwardsMotion) ? 0 : forwardsMotion;
         leanDirection *= Mathf.Max(.2f, forwardsMotion);
 
-
         if (being.IsCrouched())  leanDirection += transform.forward * .5f;
-
-        // TODO use PlaceTarget
-        var leanFrom = target.transform.position;
-        var leanTo = transform.position + _targetStartPos + leanDirection;
-        target.transform.position = Vector3.Lerp(leanFrom, leanTo, Time.deltaTime * 10);
+        return leanDirection;
     }
 
-    void BounceTorso() {
+    Vector3 GetBounce() {
         // When running, move the torso up/down with the pace
         var leg = GetLeg();
         // Torso bounces once per step, so 'twice' per cycle
@@ -93,49 +94,50 @@ public class TorsoAnimator : LimbAnimator {
         // TODO actually, should be 'number of legs' per step
         var tau = Mathf.PI * 2;
         var progress = leg.StepProgress();
-        // Advance progress a little, lines up better
-        // TODO sloopy? config?
-        progress += .1f;
-        var stepHeight = Mathf.Sin(progress * tau * 2) - 3;
+
+        // Delay by a bit TODO DOC
+        progress += 0.1f;
+
+        var stepHeight = Mathf.Sin(progress * tau * 2) - 1.65f;
         // Torso does not move as high as feet, as it is dampened
-        // TODO does this need config?
-        stepHeight *= leg.StepHeight() * 0.08f;
+        stepHeight *= leg.StepHeight() * bounceRatio;
         
         // Give height, but also a little forward motion
-        // - and lerp there slowly
-        var from = transform.localPosition;
-        var to = new Vector3(0, stepHeight, stepHeight/2);
-        transform.localPosition = Vector3.Lerp(from, to, Time.deltaTime * 30);
+        return new Vector3(0, stepHeight, stepHeight/2);
     }
 
-    void RotateTorso() {
+    Vector3 GetWobble() {
+        // When running, move the torso right/left with the pace
+        var leg = GetLeg();
+        var tau = Mathf.PI * 2;
+        var progress = leg.StepProgress();
+        
+        var width = Mathf.Sin(progress * tau * 2);
+        width *= GetWidth() * maxLeanRatio * 0.2f * being.Rush();
+        return Vector3.right * width;
+    }
+
+    Vector3 GetRotation() {
         // Keep torso pointed forwards,
         // but twist a little when running
         // TODO idle breathing?
-        if (!being.IsRunning()) {
-            TargetLookAt(Vector3.forward);
-            return;
-        }
+        if (!being.IsRunning()) return Vector3.forward;
+
         var stepProgress = GetLeg().StepProgress();
         var tau = Mathf.PI*2;
-        var twistProgress = Mathf.Cos(stepProgress * tau);
+        var twistProgress = (Mathf.Cos(stepProgress * tau) + 1) * 0.5f;
 
         var horiz = Vector3.Lerp(Vector3.right, -Vector3.right, twistProgress);
         horiz *= GetWidth() * being.Rush() * twistRatio;
-        TargetLookAt(Vector3.forward + horiz);
+        return Vector3.forward + horiz;
     }
 
-    void FixParenting() {
-        // Have the head x/z follow the chest,
-        // and the thighs folow the hips
+    void FixHead() {
+        // Have the head x/z follow the chest
+        // TODO use SurrogateChild for this?
         var pos = Vector3.Lerp(head.transform.position, target.transform.position, Time.deltaTime * 10);
         pos.y = head.transform.position.y;
         head.transform.position = pos;
-
-        // TOOD legs might have offsets (?)
-        foreach (var la in transform.parent.GetComponentsInChildren<LegAnimator>()) {
-            la.transform.localPosition = transform.localPosition;
-        }
     }
 
     float MaxLean() {
