@@ -54,7 +54,7 @@
                     "interactions": ""
                 },
                 {
-                    "name": "Gaurd",
+                    "name": "Guard",
                     "type": "Button",
                     "id": "b0dd6819-3ddc-4e0a-a800-d10c4d0e7af5",
                     "expectedControlType": "Button",
@@ -376,7 +376,7 @@
                     "interactions": "",
                     "processors": "",
                     "groups": "",
-                    "action": "Gaurd",
+                    "action": "Guard",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },
@@ -387,7 +387,7 @@
                     "interactions": "",
                     "processors": "",
                     "groups": "",
-                    "action": "Gaurd",
+                    "action": "Guard",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },

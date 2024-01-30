@@ -6,7 +6,7 @@ public class Weapon : CustomBehavior {
     // base class for all weapons in the game
     // - including unarmed
     // Most weapons will simply change 
-    // TODO gaurding / parry position? And timing?
+    // TODO guarding / parry position? And timing?
     // TODO two handed weapons??
 
     // TOOD should we use scriptableobject here?

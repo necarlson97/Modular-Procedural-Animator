@@ -9,9 +9,9 @@ public class LegAnimator : LimbAnimator {
     // Limb 'length' is known - these values
     // are a ratio of the limb's total length
     // TODO how do these look?
-    protected float stepLengthRatio = 2.5f;
+    protected float stepLengthRatio = .55f;
     protected float stepHeightRatio = .5f;
-    protected float strideHertz = 1.4f;
+    protected float strideHertz = 1.3f;
 
     // Path that the foor takes during a single step
     // (will use a default if none is defined)
@@ -21,8 +21,6 @@ public class LegAnimator : LimbAnimator {
     protected override void AfterStart() {
         // TODO not sure if this is the cleanest way
         // - method on parent?
-        _targetStartRot = RotFlatForward();
-        target.transform.localRotation = _targetStartRot;
 
         // Load the default step curve if we aren't given a specifc one
         if (footCurve == null) {
@@ -30,18 +28,10 @@ public class LegAnimator : LimbAnimator {
         }
 
         // Parent to hips (torso's root)
-        SurrogateChild.Setup(skeleton.transform, GetTorso().GetRootBone().transform);
+        skeleton.transform.SetParent(GetTorso().GetRootBone().transform);
     }
 
     public void Update() {
-        // Testing / debug
-        // TODO could move to limb
-        if (Player.IsDevMode()) return;
-        if (testPos != "") {
-            PlaceTarget(landmarks.Get(testPos));
-            return;
-        }
-
         PlaceFoot();
     }
 
@@ -74,7 +64,7 @@ public class LegAnimator : LimbAnimator {
     public void PlaceFoot(){
         // Find foot placements, and lerp to them
 
-        var footPlacement = GetFootPlacement(lastPlacement, _targetStartPos);
+        var footPlacement = GetFootPlacement(lastPlacement, _tipStartPos);
 
         // Place foot in world position - not local
         PlaceTarget(footPlacement, false);
@@ -86,12 +76,12 @@ public class LegAnimator : LimbAnimator {
         // along with ellipse for now
         var hintOffsetX = GetEllipsePoint().x / 2;
         hint.transform.localPosition = new Vector3(
-            hintStart.x + hintOffsetX, hintStart.y, hintStart.z);
+        hintStart.x + hintOffsetX, hintStart.y, hintStart.z);
     }
 
-    internal float StepProgress() {
+    public float StepProgress() {
         // 0-1, how far along are we in the step
-        var p = (Time.time * strideHertz) % 1;
+        var p = GetProgress(strideHertz);
         // Offset one foot by half-step
         return IsOffset() ? p + 0.5f : p;
     }
@@ -114,7 +104,9 @@ public class LegAnimator : LimbAnimator {
         var ellipsePoint = new Vector3(0, y, z);
 
         // Rotate the elipses around the movement vector
-        var angle = -Vector3.SignedAngle(being.WalkVelocity(), Vector3.forward, Vector3.up);
+        var angle = -Vector3.SignedAngle(
+            being.WalkVelocity(), Vector3.forward, Vector3.up
+        );
         return Quaternion.Euler(0, angle, 0) * ellipsePoint;
     }
 
@@ -183,7 +175,7 @@ public class LegAnimator : LimbAnimator {
 
         // Interpolate depending on how fast we are running
         var runRot = Quaternion.Euler(x * 180, 0, 0);
-        var restRot = Quaternion.Euler(90, 0, 0);
+        var restRot = Quaternion.Euler(0, 0, 0);
         return Quaternion.Lerp(restRot, runRot, being.Rush());
     }
 
@@ -191,12 +183,16 @@ public class LegAnimator : LimbAnimator {
     public float StepLength() {
         // Get the general stride length for this walk/run speed
         // (Longer steps when moving forward, shorter when sidestepping)
-        var forward = Mathf.Min(.2f, Mathf.Abs(being.ForwardRush()));
-        return MaxStepLength() * being.Rush() * forward;
+        var forward = Mathf.Abs(being.ForwardRush());
+        var length = (being.Rush() + forward)/2;
+        return MaxStepLength() * length;
     }
     public float StepHeight() {
         // Get the general step height for this walk/run speed
-        return MaxStepHeight() * being.Rush();
+        var h = MaxStepHeight() * being.Rush();
+        if (!being.MovingFoward()) h /= 2;
+        if (being.IsCrouched()) h /= 2;
+        return h;
     }
     internal float StepLength(float stepProgress) {
         // Get exact stride displacement for this foot,
@@ -207,8 +203,7 @@ public class LegAnimator : LimbAnimator {
     }
     internal float StepHeight(float stepProgress) {
         // Get exact step height for this foot,
-        // given 'angle' in walk cicle elipse
-        // TODO use curve, but for now, using Sin
+        // given progress in step cycle 
         return StepHeight() * footCurve.curve.Evaluate(stepProgress);
     }
     public float MaxStepLength() { return GetLength() * stepLengthRatio; }

@@ -28,10 +28,16 @@ public class Treadmill : Being {
 
         // Zero movement
         SetupButton("ZeroButton");
+        SetupButton("ToggleLockButton");
 
         // Have us moving by default
         SetMovement();
         ToggleRun();
+
+        // Setup camera
+        Slider slider = GameObject.Find("OrbitSlider").GetComponent<Slider>();
+        slider.onValueChanged.AddListener(delegate { SetOrbit(); });
+        SetOrbit();
     }
 
     void SetupButton(string buttonName) {
@@ -41,7 +47,6 @@ public class Treadmill : Being {
     }
 
     void SetupSlider(string sliderName) {
-        Debug.Log("Finding "+sliderName);
         Slider slider = GameObject.Find(sliderName).GetComponent<Slider>();
         slider.onValueChanged.AddListener(delegate { SetMovement(); });
     }
@@ -64,12 +69,29 @@ public class Treadmill : Being {
         SetMovement();
     }
 
+    bool _locked = false;
+    void ToggleLock() {
+        _locked = !_locked;
+    }
+
     Vector3 startPos;
     protected override void AfterUpdate() {
         // Keep us locked in place
         if (startPos == default(Vector3)) {
             startPos = transform.position;
         }
-        // transform.position = startPos;
+        if (_locked) transform.position = startPos;
+    }
+
+    void SetOrbit() {
+        // Orbit camera (and reference animation) around, based on slider
+        Slider slider = GameObject.Find("OrbitSlider").GetComponent<Slider>();
+        var angle = slider.value * 360;
+        var rt = transform.Find("Rotator");
+        rt.localRotation = Quaternion.Euler(0, angle, 0);
+
+        foreach (var reference in transform.GetComponentsInChildren<Animator>()) {
+            reference.transform.localRotation = Quaternion.Euler(0, -angle, 0);
+        }
     }
 }

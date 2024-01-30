@@ -15,30 +15,16 @@ public class CustomBehavior : MonoBehaviour {
     // some hardcoded shorthands for now
     // Note: some might be 1 or so degrees 'off'
     // to encourage lerp to 'choose a desired direction'
-    public static Quaternion RotForward() { return Q(0, 90, 90); }
-    public static Quaternion RotFlatForward() { return Q(90, 0, 0); }
-    public static Quaternion RotBackward() { return Q(0, -90, 90); }
-    public static Quaternion RotUp() { return Q(0, 90, 1); }
-    public static Quaternion RotUp(bool left) { 
-        if (left) return Q(0, -90, 1);
-        else return Q(0, 90, 1);
+    // TODO move to limb? Or overwrite in limb to include IsLeft()?
+    public static Quaternion Q(float x, float y, float z, bool left=true) {
+        var q = Quaternion.Euler(x, y, z);
+        if (left) return q;
+        return CustomBehavior.ReflectQuaternionX(q);
     }
-    public static Quaternion RotDown() { return Q(0, 90, 180); }
-    public static Quaternion RotLeft() { return Q(0, 0, 90); }
-    public static Quaternion RotRight() { return Q(0, 0, -90); }
-    public static Quaternion Q(float x, float y, float z) {
-        return Quaternion.Euler(x, y, z);   
+    public static Quaternion ReflectQuaternionX(Quaternion original) {
+        return new Quaternion(original.x, -original.y, -original.z, original.w);
     }
-    public static Quaternion Rotation(string name) {
-        // Given the string name of a rotation (such as 'Up'),
-        // use reflection to call that method
-        var method = typeof(CustomBehavior).GetMethod("Rot"+name, Type.EmptyTypes);
-        if (method == null) {
-            Debug.LogError("Could not find method for "+name+"Pos");
-            return default(Quaternion);
-        }
-        return (Quaternion) method.Invoke(null, null);
-    }
+
 
     public static GameObject FindContains(string query, Transform t) {
         // Find a child gameobject if it contains a string

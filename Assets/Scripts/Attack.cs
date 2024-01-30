@@ -44,12 +44,12 @@ public class StrikeTarget {
     }
     public StrikeTarget(LimbAnimator limb, string landmarkName, string rotName) {
         // Can also create with the limb and given names,
-        // using the landmark system and the CustomBehavior
+        // using the landmark system and limb rotations
         // handy rotations method
         // Debug.Log(landmarkName+" strike target: "+limb);
         // TODO
         this.pos = limb.landmarks.Get(landmarkName);
-        this.rot = CustomBehavior.Rotation(rotName);
+        this.rot = limb.Rotation(rotName);
     }
     public StrikeTarget(LimbAnimator limb, string landmarkName, Vector3 lookAt) {
         // And can create with a landmark and a lookAt rotation

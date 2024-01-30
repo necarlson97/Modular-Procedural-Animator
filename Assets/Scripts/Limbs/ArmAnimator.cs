@@ -12,17 +12,23 @@ public class ArmAnimator : LimbAnimator {
     // - e.g., inheriting 'feindish-idle' code and 'dagger-thrust'
     // from elsewhere
 
+
+    // TODO REMOVE
+    // just for testing
+    public string testPos;
+    public string testRot;
+
     protected override void AfterStart() {
         // Elbows point 'behind' when starting in T-pose
-        var hintPos = landmarks.Get("WideWaist");
-        hintPos += transform.forward * -1f * GetDepth();
+        var hintPos = landmarks.Get("Waist");
+        hintPos += transform.forward * -2f * GetDepth();
         hintPos += transform.up * 1f * GetLength();
         hint.transform.position = hintPos;
         // For now, swapping to using a springy connection
         SetupSpring();
 
         // Parent root to torso's chest
-        SurrogateChild.Setup(skeleton.transform, GetTorso().GetChestBone().transform);
+        skeleton.transform.SetParent(GetTorso().GetChestBone().transform);
     }
 
     public void Update() {
@@ -33,16 +39,15 @@ public class ArmAnimator : LimbAnimator {
         // Testing / debug
         // TODO could move to limb
         if (Player.IsDevMode()) return;
-        if (testPos != "") {
-            PlaceTarget(landmarks.Get(testPos));
-            return;
-        }
+        if (testPos != "") PlaceTarget(landmarks.Get(testPos));
+        if (testPos != "") PlaceTarget(Rotation(testRot));
+        if (testPos != "" || testRot != "") return;
 
         // TODO we should have a more codified priority system
         // in the limb animator, for passing up what we think the limb
         // should be doing, then attack or whatever can override
         if (being.IsAttacking()) return;
-        else if (being.IsGaurding()) Gaurd();
+        else if (being.IsGuarding()) Guard();
         else if (being.IsWalking()) RunCycle();
         else Rest();
     }
@@ -52,11 +57,11 @@ public class ArmAnimator : LimbAnimator {
         PlaceTarget(landmarks.Get("Lowered"), RotDown());
     }
 
-    void Gaurd() {
-        // When gaurding, place hands where weapon gaurd
+    void Guard() {
+        // When guarding, place hands where weapon gaurd
         // expects them to be
         // TODO for now - just keep fists by chin
-        PlaceTarget(landmarks.Get("Face"), RotUp(IsLeft()));
+        PlaceTarget(landmarks.Get("Face"), RotUp());
     }
 
     void RunCycle() {

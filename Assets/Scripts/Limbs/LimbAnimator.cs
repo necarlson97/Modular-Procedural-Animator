@@ -1,7 +1,10 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Animations.Rigging;
+using System.Linq;
+
+using DitzelGames.FastIK;
 
 public class LimbAnimator : CustomBehavior {
     // Holds code for setting up IK for arm / leg / torso / etc
@@ -23,40 +26,33 @@ public class LimbAnimator : CustomBehavior {
 
     // Set programatically
     internal GameObject target;
-    internal GameObject skeleton;
     internal GameObject hint;
+    internal GameObject skeleton;
+
+    internal FastIKFabric fik;
+
     // The character/monster/etc that this limb belongs to
     internal Being being;
     internal LimbLandmarks landmarks;
 
     // Just some helper variables
-    protected Vector3 _targetStartPos;
-    protected Quaternion _targetStartRot;
+    protected Vector3 _tipStartPos;
+    protected Quaternion _tipStartRot;
     protected Vector3 _rootStartPos;
     protected Quaternion _rootStartRot;
 
-    // Wheter to setup twoBone or chain
-    public bool twoBone = true;
-
-    // TODO REMOVE
-    // just for testing
-    public string testPos;
-    
     void Start() {
         being = transform.parent.GetComponent<Being>();
         skeleton = GetSkeleton();
         // TODO for now we don't actually memoize the mesh gameobject,
         // but we need to ensure it is a child of mine
         GetMesh();
-        target = CreateEmpty("Target", GetTipBone());
 
         // Establish bounds before we setup any IK
         GetBounds();
         // Provide before/after logic hooks for the children
         BeforeStart();
-        SetupRig();
-        if (twoBone) SetupTwoBone();
-        else SetupChain();
+        SetupIK();
 
         // Keep handy references to human understandable positions,
         // such as 'holster', 'extended', etc
@@ -109,101 +105,61 @@ public class LimbAnimator : CustomBehavior {
         return null;
     }
 
-    void SetupRig() {
+    internal Vector3 hintStart;
+    void SetupIK() {
         // Create the objects / components needed for IK
         // (because Unity's IK setup is somewhat awkward,
         // and we want to do it, reapeatidly, 100s of times,
         // better just to do it programatically. Thanks chat-gpt)
 
-        _targetStartPos = target.transform.localPosition;
-        _targetStartRot = target.transform.localRotation;
-        _rootStartPos = GetRootBone().transform.localPosition;
-        _rootStartRot = GetRootBone().transform.localRotation;
-
-         // Setup animator
-        var animator = gameObject.GetComponent<Animator>();
-        if (animator == null) {
-            animator = gameObject.AddComponent<Animator>();
-        }
-
-        // Setup rig builder on the root character GameObject
-        var rigBuilder = gameObject.GetComponent<RigBuilder>();
-        if (rigBuilder == null) {
-            rigBuilder = gameObject.AddComponent<RigBuilder>();
-        }
-
-        // Setup rig
-        var rig = skeleton.GetComponent<Rig>();
-        if (rig == null) {
-            rig = skeleton.AddComponent<Rig>();
-            // Add the rig to the rig builder
-            var rigLayer = new RigLayer(rig, true);
-            rigBuilder.layers.Add(rigLayer);
-        }
-    }
-
-    protected void SetupChain() {
-        // Setup IK chain between root and tip,
-        // (ignoring midbone and hint)
-        var ik = skeleton.GetComponent<ChainIKConstraint>();
-        if (ik == null)  {
-            ik = skeleton.AddComponent<ChainIKConstraint>();
-        }
-
-        ik.data.root = GetRootBone().transform;
-        ik.data.tip = GetTipBone().transform;
-        ik.data.target = target.transform;
-        ik.data.chainRotationWeight = 1f;
-        ik.data.tipRotationWeight = 1f;
-        ik.data.maintainTargetPositionOffset = true;
-        ik.data.maintainTargetRotationOffset = true;
-        ik.data.maxIterations = 10;
-        ik.data.tolerance = 0.001f;
-
-        // Workaround - see 'EnableRig'
-        GetComponent<RigBuilder>().enabled = false;
-        Invoke("EnableRig", 0);
-    }
-
-    internal Vector3 hintStart;
-    protected void SetupTwoBone() {
-        // Set up a two bone constraint, using midbone,
-        // where everything before/after is basically rigid
-        // (which may be more useful for some limbs
-        // - and more perfomant)
-        var ik = skeleton.GetComponent<TwoBoneIKConstraint>();
-        if (ik == null) {
-            ik = skeleton.AddComponent<TwoBoneIKConstraint>();
-        }
-        // For now, just create a hint empty right infront of the limb,
-        // - then we can worry about changing it in a subscript
-        var hintOffset = transform.forward * 0.8f * GetLength();
-        var hintPos = GetMidBone().transform.position + hintOffset;
-        hint = CreateEmpty("Hint", hintPos);
+        fik = SetupIK(GetRootBone().transform, GetTipBone().transform);
+        target = fik.Target.gameObject;
+        hint = fik.Pole.gameObject;
         hintStart = hint.transform.localPosition;
-
-        // Setting IK information
-        ik.data.target = target.transform;
-        ik.data.hint = hint.transform;
-        ik.data.root = GetRootBone().transform;
-        ik.data.mid = GetMidBone().transform;
-        ik.data.tip = GetTipBone().transform;
-        ik.data.targetPositionWeight = 1;
-        ik.data.targetRotationWeight = 1;
-        ik.data.hintWeight = 1;
-
-        // Workaround - see 'EnableRig'
-        GetComponent<RigBuilder>().enabled = false;
-        Invoke("EnableRig", 0);
     }
 
-    void EnableRig() {
-        // There is a bug where the ik does not work unless
-        // RigBuilder was disabled/reenabled in editor
-        // - perhaps has to do with targetPositionWeight not
-        // being properly updated. For now, this works
-        // TODO DOES IT??
-        GetComponent<RigBuilder>().enabled = true;
+    public FastIKFabric SetupIK(Transform root, Transform tip, bool shouldHint=true, string name="") {
+        // Create the objects / components needed for IK
+        // (because IK setup is somewhat awkward,
+        // and we want to do it, reapeatidly, 100s of times,
+        // better just to do it programatically. Thanks chat-gpt)
+        // Root - root bone
+        // Tip - tip bone
+        // shouldHint - wheter to add a hint pole that orients  the 'elbow of the joint'
+
+        // Create IK target
+        var newTarget = CreateEmpty("Target"+name, tip);
+        var newFik = tip.gameObject.AddComponent<FastIKFabric>();
+        newFik.Target = newTarget.transform;
+        newFik.Iterations = 20; // For now, increasing default
+
+        if (shouldHint) {
+            // For now, just create a hint empty right infront of the limb,
+            // - then we can worry about changing it in a subscript
+            var hintOffset = transform.forward * 0.8f * GetLength();
+            var hintPos = GetMidBone().transform.position + hintOffset;
+            var newHint = CreateEmpty("Hint"+name, hintPos);
+            newFik.Pole = newHint.transform;
+        }
+
+        // Find out the chain length programatically,
+        // but default to 2 if needed
+        newFik.ChainLength = 2;
+        var separation = TransSeparation(root, tip);
+        if (separation == null) {
+            Debug.LogError(
+                "Did not find chain length between root: "
+                +root.gameObject+" and tip: "+tip.gameObject
+            );
+        } else if (separation <= 0) {
+            Debug.LogError(
+                "Root was sibling/child of tip ("+separation+") root: "
+                +root.gameObject+", tip: "+tip.gameObject
+            );
+        }
+        // TODO remove log
+        newFik.ChainLength = (int) separation;
+        return newFik;
     }
 
     protected void SetupSpring() {
@@ -215,6 +171,64 @@ public class LimbAnimator : CustomBehavior {
         // and just trust the ik target to follow
         // TODO is this sloppy?
         target = spring.Setup();
+    }
+
+    public int? TransSeparation(Transform t1, Transform t2) {
+        // Get the hierarchical separation of these two transforms, e.g:
+        // if t1 is the parent of t2: return 1
+        // if t2 is the grandparent of t1: return -2
+        // if they are siblings: return 0
+        // if they are not related: return null
+
+        // We perform this by:
+        // * Traverse up from each transform,
+        //    counting the steps until you reach a common ancestor.
+        // * The separation is the difference in the number of steps
+        //    to the common ancestor for each transform.
+        // If no common ancestor is found (other than the root),
+        // they are not related, and the function returns null.
+
+        int t1Depth = 0;
+        int t2Depth = 0;
+        Transform currentT1 = t1;
+        Transform currentT2 = t2;
+
+        // Find depth in the hierarchy for each transform
+        while (currentT1.parent != null) {
+            t1Depth++;
+            currentT1 = currentT1.parent;
+        }
+        while (currentT2.parent != null) {
+            t2Depth++;
+            currentT2 = currentT2.parent;
+        }
+        int seperation = t2Depth - t1Depth;
+
+        // Reset to start positions
+        currentT1 = t1;
+        currentT2 = t2;
+
+        // Equalize the depth
+        while (t1Depth > t2Depth) {
+            currentT1 = currentT1.parent;
+            t1Depth--;
+        }
+        while (t2Depth > t1Depth) {
+            currentT2 = currentT2.parent;
+            t2Depth--;
+        }
+
+        // Traverse up the hierarchy to find the common ancestor
+        while (currentT1 != null && currentT2 != null) {
+            if (currentT1 == currentT2) {
+                return seperation; // Return the difference in depth
+            }
+            currentT1 = currentT1.parent;
+            currentT2 = currentT2.parent;
+        }
+
+        // No common ancestor other than root
+        return null;
     }
 
     public GameObject GetRootBone() {
@@ -274,12 +288,8 @@ public class LimbAnimator : CustomBehavior {
         // so starting pos call tell us length
         if (_length != -1) return _length;
         var rootPos = GetRootBone().transform.position - transform.position;
-        _length = Vector3.Distance(rootPos, _targetStartPos);
+        _length = Vector3.Distance(rootPos, _tipStartPos);
         return _length;
-    }
-
-    public Vector3 TargetOffset() {
-        return target.transform.localPosition - _targetStartPos;
     }
 
     public void Place(GameObject obj, Vector3 destination, bool local=true) {
@@ -418,9 +428,22 @@ public class LimbAnimator : CustomBehavior {
         // TODO should we rotate to account for T-pose and whatnot?
         // Maybe just make 'Height' the longest and go from there?
         if (_bounds != default(Vector3)) return _bounds;
+
+        // We use these to calcualte length, so make sure they are set here
+        var tipPos = GetTipBone().transform.position;
+        _tipStartPos = transform.InverseTransformPoint(tipPos);
+        _tipStartRot = GetTipBone().transform.localRotation;
+        var rootPos = GetRootBone().transform.position;
+        _rootStartPos = transform.InverseTransformPoint(rootPos);
+        _rootStartRot = GetRootBone().transform.localRotation;
+
         var mesh = GetComponentInChildren<SkinnedMeshRenderer>();
         _bounds = mesh.bounds.size;
         return _bounds;
+    }
+    public Vector3 ResetBounds() {
+        _bounds = default(Vector3);
+        return GetBounds();
     }
     public float GetWidth() { return GetBounds().x; }
     public float GetDepth() { return GetBounds().z; }
@@ -437,9 +460,8 @@ public class LimbAnimator : CustomBehavior {
     }
 
     public LegAnimator GetLeg(bool opposite=false) {
-        // TODO should this be limb method?
         // TODO is this leg-finding good?
-        var legs = transform.parent.GetComponentsInChildren<LegAnimator>();
+        var legs = GetLegs();
 
         bool getLeft = IsLeft();
         if (opposite) getLeft = !getLeft;
@@ -450,6 +472,10 @@ public class LimbAnimator : CustomBehavior {
         }
         return null;
     }
+    public LegAnimator[] GetLegs() {
+        // Return the array of all legs
+        return transform.parent.GetComponentsInChildren<LegAnimator>();
+    }
 
     TorsoAnimator _torso;
     public TorsoAnimator GetTorso() {
@@ -458,6 +484,38 @@ public class LimbAnimator : CustomBehavior {
         if (_torso != null) return _torso;
         _torso = transform.parent.GetComponentInChildren<TorsoAnimator>();
         return _torso;
+    }
+
+    // Rotations for, say, hands/feet
+    // TODO do these depend on start rot?
+    // TODO verify all of these
+    public Quaternion RotForward() { return Q(-90, 0, 90); }
+    public Quaternion RotFlatForward() { return Q(0, 90, 0); }
+    public Quaternion RotBackward() { return Q(90, 0, 90); }
+    public Quaternion RotUp() { return Q(180, 0, 90); }
+    public Quaternion RotDown() { return Q(0, 0, 90); }
+    public Quaternion RotOut() { return Q(0, 0, 0); }
+    public Quaternion RotIn() { return Q(0, 180, 0); }
+    public Quaternion Q(float x, float y, float z) {
+        var q = Quaternion.Euler(x, y, z);
+        if (IsLeft()) return q;
+        return CustomBehavior.ReflectQuaternionX(q);
+    }
+    public Quaternion Rotation(string name) {
+        // Given the string name of a rotation (such as 'Up'),
+        // use reflection to call that method
+        var method = GetType().GetMethod("Rot" + name, Type.EmptyTypes);
+        if (method == null) {
+            Debug.LogError("Could not find method for " + name);
+            return default(Quaternion);
+        }
+        return (Quaternion) method.Invoke(this, null);
+    }
+
+    public float GetProgress(float hertz=1f) {
+        // Get progress 0-1 for a cyclic animation,
+        // such as steping, or breathing
+        return (Time.time * hertz) % 1;
     }
 
     void OnDrawGizmos() {

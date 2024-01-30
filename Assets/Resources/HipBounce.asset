@@ -10,47 +10,56 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8a7a7d81c283ade4ab0aa103897739cd, type: 3}
-  m_Name: HandRot
+  m_Name: HipBounce
   m_EditorClassIdentifier: 
   curve:
     serializedVersion: 2
     m_Curve:
     - serializedVersion: 3
-      time: -0.02758701
-      value: 0.010548174
-      inSlope: 0.018960962
-      outSlope: 0.018960962
+      time: -0.0016012341
+      value: 0.106819585
+      inSlope: 2.3077977
+      outSlope: 2.3077977
       tangentMode: 0
       weightedMode: 0
-      inWeight: 0
-      outWeight: 0.5002255
+      inWeight: 0.7382041
+      outWeight: 1
     - serializedVersion: 3
-      time: 0.15974045
-      value: 0.008623362
-      inSlope: 0.053846635
-      outSlope: 0.053846635
+      time: 0.08456093
+      value: 0.9518589
+      inSlope: 1.9873407
+      outSlope: 1.9873407
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.13231601
+    - serializedVersion: 3
+      time: 0.47889116
+      value: -0.019602109
+      inSlope: -0.6497844
+      outSlope: -0.6497844
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.19550727
+    - serializedVersion: 3
+      time: 0.7026174
+      value: -0.22768304
+      inSlope: 0.033419512
+      outSlope: 0.033419512
       tangentMode: 0
       weightedMode: 0
       inWeight: 0.33333334
       outWeight: 0.33333334
     - serializedVersion: 3
-      time: 0.5006515
-      value: 0.68848634
-      inSlope: -0.3504504
-      outSlope: -0.3504504
+      time: 0.99727607
+      value: 0.10624346
+      inSlope: 3.765491
+      outSlope: 3.765491
       tangentMode: 0
       weightedMode: 0
-      inWeight: 0.24888188
-      outWeight: 0.31879437
-    - serializedVersion: 3
-      time: 0.9604805
-      value: 0.011597633
-      inSlope: 0.1450272
-      outSlope: 0.1450272
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0.36332572
-      outWeight: 0.33333334
+      inWeight: 0.15279682
+      outWeight: 0
     m_PreInfinity: 2
     m_PostInfinity: 1
     m_RotationOrder: 4

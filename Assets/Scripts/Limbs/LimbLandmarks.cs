@@ -111,7 +111,7 @@ public abstract class Landmark {
     internal void OnDrawGizmos() {
         // Show the landmark's name in space
         var name = GetType().Name;
-        Handles.Label(transform.position+Get(), name);
+        Handles.Label(transform.position+Get(), _limb.name+" "+name);
         Gizmos.color = Color.gray;
         Gizmos.DrawSphere(transform.position+Get(), .001f);
     }
@@ -207,7 +207,7 @@ public class ExtendedBack : Landmark {
     public ExtendedBack(LimbAnimator limb) : base(limb) {}
     protected override Vector3 Calcualte(bool left) {
         var pos = GetTorso().GetChestBone().transform.position;
-        var frontOffset = GetLength() * -1.8f * transform.forward;
+        var frontOffset = GetLength() * -1f * transform.forward;
         pos += frontOffset;
         // For now, no side offset
         return pos;

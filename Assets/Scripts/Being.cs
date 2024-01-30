@@ -112,23 +112,22 @@ public abstract class Being : CustomBehavior {
         GetWeapon().Special();
     }
 
-    // How much time after the gaurd starts that we are
+    // How much time after the guard starts that we are
     // able to parry the blow
     float _parryMax = .1f;
-    float _gaurdTime;
-    protected void UpdateGaurd() {
-        if (!_gaurding) _gaurdTime = 0;
+    float _guardTime;
+    protected void UpdateGuard() {
+        if (!_guarding) _guardTime = 0;
         else {
-            _gaurdTime += Time.deltaTime;
+            _guardTime += Time.deltaTime;
         }
     }
-    bool _gaurding;
-    public void ToggleGaurd() { _gaurding = !_gaurding; }
-    public void StartGaurd() { _gaurding = true; }
-    public void StopGaurd() { _gaurding = false; }
-    public bool IsGaurding() { return _gaurding; }
-    public bool CanParry() { return _gaurdTime < _parryMax; }
-
+    bool _guarding;
+    public void ToggleGuard() { _guarding = !_guarding; }
+    public void StartGuard() { _guarding = true; }
+    public void StopGuard() { _guarding = false; }
+    public bool IsGuarding() { return _guarding; }
+    public bool CanParry() { return _guardTime < _parryMax; }
 
     public Weapon GetWeapon() {
         // Return what weapon this being is holding,

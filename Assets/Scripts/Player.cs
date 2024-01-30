@@ -40,11 +40,11 @@ public class Player : Being {
             ctx => { SpecialAttack(); }
         );
 
-        CustomInput.GetAction("Gaurd").started += (
-            ctx => { StartGaurd(); }
+        CustomInput.GetAction("Guard").started += (
+            ctx => { StartGuard(); }
         );
-        CustomInput.GetAction("Gaurd").canceled += (
-            ctx => { StopGaurd(); }
+        CustomInput.GetAction("Guard").canceled += (
+            ctx => { StopGuard(); }
         );
     }
 

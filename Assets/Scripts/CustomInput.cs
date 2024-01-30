@@ -13,7 +13,7 @@ public static class CustomInput {
     static string[] inputNames = {
         "Movement", "Look",
         "Run", "Jump", "Crouch",
-        "Target Lock", "Gaurd",
+        "Target Lock", "Guard",
         "Light Attack", "Heavy Attack", "Special Attack",
         "Mouse Click", "Escape",
         "Dev Key", "Inc Time", "Dec Time"
