@@ -23,6 +23,7 @@ public abstract class Being : CustomBehavior {
     public void SetLook(Vector3 look) { _lookAt = look; }
     Vector3 _movement;
     public void SetMovement(Vector3 move) { _movement = move; }
+    public Vector3 GetMovement() { return _movement; }
     bool _crouching;
     public void ToggleCrouch() { _crouching = !_crouching; }
     public void StartCrouch() { _crouching = true; }
